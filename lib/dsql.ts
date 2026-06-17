@@ -56,3 +56,25 @@ export async function execute(sql: string, params: any[] = []) {
     return result.rowCount
   })
 }
+
+// Manual referential integrity checks (Aurora DSQL doesn't support FOREIGN KEYs)
+
+export async function campaignExists(campaignId: string): Promise<boolean> {
+  const result = await queryOne('SELECT id FROM campaigns WHERE id = $1', [campaignId])
+  return !!result
+}
+
+export async function founderExists(founderId: string): Promise<boolean> {
+  const result = await queryOne('SELECT id FROM founders WHERE id = $1', [founderId])
+  return !!result
+}
+
+export async function participantExists(participantId: string): Promise<boolean> {
+  const result = await queryOne('SELECT id FROM participants WHERE id = $1', [participantId])
+  return !!result
+}
+
+export async function rewardTierExists(tierId: string): Promise<boolean> {
+  const result = await queryOne('SELECT id FROM reward_tiers WHERE id = $1', [tierId])
+  return !!result
+}

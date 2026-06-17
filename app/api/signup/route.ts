@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
-import { query, execute } from '@/lib/dsql'
+import { query, execute, campaignExists } from '@/lib/dsql'
 import { logReferralEvent, putFraudSignal } from '@/lib/dynamo'
 
 export async function POST(req: NextRequest) {
@@ -13,6 +13,12 @@ export async function POST(req: NextRequest) {
         rank: Math.floor(Math.random() * 100) + 1,
         referralCode: uuidv4().substring(0, 8),
       })
+    }
+
+    // Verify campaign exists (manual referential integrity)
+    const campaignExistsCheck = await campaignExists(campaign_id)
+    if (!campaignExistsCheck) {
+      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
     const referralCode = uuidv4().substring(0, 8)
