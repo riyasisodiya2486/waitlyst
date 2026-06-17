@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { query, execute } from '@/lib/dsql'
+import { query, execute, founderExists } from '@/lib/dsql'
 import { mockCampaigns } from '@/lib/mock-data'
 
 export async function GET(req: NextRequest) {
@@ -36,6 +36,12 @@ export async function POST(req: NextRequest) {
 
     if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
       return NextResponse.json({ id: 'mock-campaign', ...body })
+    }
+
+    // Verify founder exists (manual referential integrity)
+    const founderExistsCheck = await founderExists(founder_id)
+    if (!founderExistsCheck) {
+      return NextResponse.json({ error: 'Founder not found' }, { status: 404 })
     }
 
     const result = await query(
