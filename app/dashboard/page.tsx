@@ -7,6 +7,7 @@ import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { Navigation } from '@/components/navigation'
 import { CustomCursor } from '@/components/custom-cursor'
 import { mockMetrics, mockCampaigns } from '@/lib/mock-data'
+import { fetchCampaigns, isDemo } from '@/lib/api-client'
 
 function CountUpMetric({ target }: { target: number }) {
   const [count, setCount] = useState(0)
@@ -70,6 +71,18 @@ const itemVariants = {
 }
 
 export default function Dashboard() {
+  const [campaigns, setCampaigns] = useState(mockCampaigns)
+
+  useEffect(() => {
+    if (!isDemo()) {
+      fetchCampaigns()
+        .then(setCampaigns)
+        .catch((err) => {
+          console.error('[v0] Failed to fetch campaigns:', err)
+          setCampaigns(mockCampaigns)
+        })
+    }
+  }, [])
   return (
     <main className="relative bg-[#080808] text-[#F0EDE6] min-h-screen">
       <CustomCursor />
@@ -137,7 +150,7 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mockCampaigns.map((campaign) => (
+                  {campaigns.map((campaign) => (
                     <motion.tr
                       key={campaign.id}
                       className="border-b border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.02)] transition-colors"
