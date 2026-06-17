@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { Navigation } from '@/components/navigation'
 import { CustomCursor } from '@/components/custom-cursor'
 import { mockFraudItems } from '@/lib/mock-data'
+import { fetchFraud, isDemo } from '@/lib/api-client'
 import { AlertTriangle, CheckCircle2, AlertCircle } from 'lucide-react'
 
 function CircularProgress({ percentage, color }: { percentage: number; color: string }) {
@@ -92,12 +93,24 @@ const itemVariants = {
 
 export default function FraudMonitor() {
   const [expandedIds, setExpandedIds] = useState<string[]>([])
+  const [fraudItems, setFraudItems] = useState(mockFraudItems)
+
+  useEffect(() => {
+    if (!isDemo()) {
+      fetchFraud('demo-campaign')
+        .then(setFraudItems)
+        .catch((err) => {
+          console.error('[v0] Failed to fetch fraud data:', err)
+          setFraudItems(mockFraudItems)
+        })
+    }
+  }, [])
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]))
   }
 
-  const highRiskCount = mockFraudItems.filter((item) => item.riskScore > 70).length
+  const highRiskCount = fraudItems.filter((item) => item.riskScore > 70).length
 
   return (
     <main className="relative bg-[#080808] text-[#F0EDE6] min-h-screen">
@@ -166,7 +179,7 @@ export default function FraudMonitor() {
             </div>
 
             <div className="divide-y divide-[rgba(255,255,255,0.04)]">
-              {mockFraudItems.map((item, idx) => {
+              {fraudItems.map((item, idx) => {
                 const isExpanded = expandedIds.includes(`fraud-${idx}`)
                 const riskColor =
                   item.riskScore > 70 ? '#E8616A' : item.riskScore > 50 ? '#E8B339' : '#6FCF97'

@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { Navigation } from '@/components/navigation'
 import { CustomCursor } from '@/components/custom-cursor'
+import { createCheckoutSession, isDemo } from '@/lib/api-client'
 import { CheckCircle2, Circle } from 'lucide-react'
 
 const containerVariants = {
@@ -55,12 +57,16 @@ function PlanCard({
   features: featureList,
   isPro = false,
   isCurrent = false,
+  isLoading = false,
+  onUpgrade,
 }: {
   name: string
   price: string
   features: { text: string; included: boolean }[]
   isPro?: boolean
   isCurrent?: boolean
+  isLoading?: boolean
+  onUpgrade?: () => void
 }) {
   return (
     <motion.div
@@ -99,15 +105,17 @@ function PlanCard({
       </div>
 
       <button
+        onClick={isPro && !isCurrent ? onUpgrade : undefined}
+        disabled={isCurrent || isLoading}
         className={`w-full py-3 rounded font-medium text-[13px] mb-8 transition-all duration-200 dm-mono ${
           isCurrent
             ? 'bg-[rgba(200,241,53,0.1)] border border-[#C8F135] text-[#C8F135]'
             : isPro
-              ? 'bg-[#C8F135] text-[#080808] hover:bg-[#d4f55a]'
+              ? 'bg-[#C8F135] text-[#080808] hover:bg-[#d4f55a] disabled:opacity-50'
               : 'bg-[rgba(255,255,255,0.06)] text-[#F0EDE6] hover:bg-[rgba(255,255,255,0.1)]'
         }`}
       >
-        {isCurrent ? 'Current Plan' : isPro ? 'Upgrade to Pro' : 'Downgrade'}
+        {isLoading ? 'Processing...' : isCurrent ? 'Current Plan' : isPro ? 'Upgrade to Pro' : 'Downgrade'}
       </button>
 
       <div className="space-y-3">
@@ -139,6 +147,34 @@ function PlanCard({
 }
 
 export default function Billing() {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleCheckout = async () => {
+    try {
+      setIsLoading(true)
+      if (isDemo()) {
+        alert('Demo mode: Redirect to Stripe checkout in production')
+        return
+      }
+
+      const response = await createCheckoutSession(
+        'founder-id',
+        'user@example.com',
+        'User Name',
+        `${window.location.origin}/dashboard/billing?success=true`,
+        window.location.href
+      )
+
+      if (response.url) {
+        window.location.href = response.url
+      }
+    } catch (error) {
+      console.error('[v0] Checkout error:', error)
+      alert('Failed to start checkout')
+    } finally {
+      setIsLoading(false)
+    }
+  }
   return (
     <main className="relative bg-[#080808] text-[#F0EDE6] min-h-screen">
       <CustomCursor />
@@ -170,12 +206,15 @@ export default function Billing() {
               price="Free"
               features={features.free}
               isCurrent={true}
+              isLoading={isLoading}
             />
             <PlanCard
               name="Pro"
               price="$29"
               features={features.pro}
               isPro={true}
+              isLoading={isLoading}
+              onUpgrade={handleCheckout}
             />
           </motion.div>
 
