@@ -3,6 +3,7 @@ import Google from '@auth/core/providers/google'
 import PostgresAdapter from '@auth/pg-adapter'
 import { Client } from 'pg'
 import { DsqlSigner } from '@aws-sdk/dsql-signer'
+import { v4 as uuidv4 } from 'uuid'
 
 let signerInstance: DsqlSigner | null = null
 
@@ -41,6 +42,29 @@ async function getClient() {
   return client
 }
 
+async function ensureFounderExists(email: string, name: string) {
+  try {
+    const client = await getClient()
+    
+    // Check if founder already exists
+    const result = await client.query('SELECT id FROM founders WHERE email = $1', [email])
+    
+    if (result.rows.length === 0) {
+      // Create founder on first login
+      const founderId = uuidv4()
+      await client.query(
+        'INSERT INTO founders (id, email, name, plan, created_at) VALUES ($1, $2, $3, $4, $5)',
+        [founderId, email, name, 'free', new Date()]
+      )
+      console.log('[v0] Created new founder:', founderId, 'for', email)
+    }
+    
+    await client.end()
+  } catch (error) {
+    console.error('[v0] Error ensuring founder exists:', error)
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Google({
@@ -51,5 +75,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PostgresAdapter(getClient),
   pages: {
     signIn: '/login',
+  },
+  callbacks: {
+    async signIn({ user }) {
+      if (user.email && user.name) {
+        await ensureFounderExists(user.email, user.name)
+      }
+      return true
+    },
   },
 })
