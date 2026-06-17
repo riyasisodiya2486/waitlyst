@@ -32,32 +32,39 @@ export function Navigation() {
       </Link>
 
       <div className="hidden md:flex items-center gap-8">
-        {['Product', 'Pricing', 'Docs'].map((item) => (
-          <motion.a
-            key={item}
-            href="#"
-            className="dm-mono text-[13px] text-[#8A8782] hover:text-[#F0EDE6] transition-colors duration-150"
-            whileHover={{ y: -1 }}
-          >
-            {item}
-          </motion.a>
-        ))}
+        <Link
+          href="/dashboard"
+          className="dm-mono text-[13px] text-[#8A8782] hover:text-[#F0EDE6] transition-colors duration-150"
+        >
+          Product
+        </Link>
+        <a
+          href="#"
+          className="dm-mono text-[13px] text-[#8A8782] hover:text-[#F0EDE6] transition-colors duration-150"
+        >
+          Pricing
+        </a>
+        <a
+          href="#"
+          className="dm-mono text-[13px] text-[#8A8782] hover:text-[#F0EDE6] transition-colors duration-150"
+        >
+          Docs
+        </a>
       </div>
 
       <div className="flex items-center gap-3">
-        <motion.a
-          href="#"
+        <Link
+          href="/login"
           className="dm-mono text-[13px] text-[#F0EDE6] hover:text-[#8A8782] px-4 py-2 transition-colors duration-150 interactive"
-          whileHover={{ opacity: 0.8 }}
         >
           Sign in
-        </motion.a>
-        <motion.button
-          className="dm-mono text-[13px] font-medium text-[#080808] bg-[#C8F135] hover:bg-[#d4f55a] px-[18px] py-[9px] rounded transition-all duration-150 interactive"
-          whileHover={{ y: -1, boxShadow: '0 4px 12px rgba(200,241,53,0.3)' }}
+        </Link>
+        <Link
+          href="/dashboard"
+          className="dm-mono text-[13px] font-medium text-[#080808] bg-[#C8F135] hover:bg-[#d4f55a] px-[18px] py-[9px] rounded transition-all duration-150 interactive inline-block"
         >
           Get started →
-        </motion.button>
+        </Link>
       </div>
     </motion.nav>
   )
