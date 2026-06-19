@@ -9,11 +9,20 @@ let signerInstance: DsqlSigner | null = null
 
 function getSigner() {
   if (!signerInstance) {
+    const accessKeyId = process.env.AWS_ACCESS_KEY_ID
+    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY
+    
+    if (!accessKeyId || !secretAccessKey) {
+      console.warn('[v0] AWS credentials not set, using basic connection')
+      // Return null to indicate signer not available
+      return null as any
+    }
+    
     signerInstance = new DsqlSigner({
       region: process.env.AWS_REGION || 'us-east-1',
       credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+        accessKeyId,
+        secretAccessKey,
       },
     })
   }
@@ -42,29 +51,6 @@ async function getClient() {
   return client
 }
 
-async function ensureFounderExists(email: string, name: string) {
-  try {
-    const client = await getClient()
-    
-    // Check if founder already exists
-    const result = await client.query('SELECT id FROM founders WHERE email = $1', [email])
-    
-    if (result.rows.length === 0) {
-      // Create founder on first login
-      const founderId = uuidv4()
-      await client.query(
-        'INSERT INTO founders (id, email, name, plan, created_at) VALUES ($1, $2, $3, $4, $5)',
-        [founderId, email, name, 'free', new Date()]
-      )
-      console.log('[v0] Created new founder:', founderId, 'for', email)
-    }
-    
-    await client.end()
-  } catch (error) {
-    console.error('[v0] Error ensuring founder exists:', error)
-  }
-}
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Google({
@@ -78,8 +64,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async signIn({ user }) {
-      if (user.email && user.name) {
-        await ensureFounderExists(user.email, user.name)
+      try {
+        if (user.email && user.name) {
+          console.log('[v0] User signed in:', user.email)
+          // Founder creation will be handled by a separate API call after successful auth
+        }
+      } catch (error) {
+        console.error('[v0] Error in signIn callback:', error)
       }
       return true
     },
