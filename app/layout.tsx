@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist } from 'next/font/google'
-import { SessionProvider } from 'next-auth/react'
 import './globals.css'
 
 const geist = Geist({ subsets: ['latin'] })
@@ -26,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${geist.className} bg-[#080808] text-[#F0EDE6] antialiased`}>
-        <SessionProvider>{children}</SessionProvider>
+        {children}
       </body>
     </html>
   )
