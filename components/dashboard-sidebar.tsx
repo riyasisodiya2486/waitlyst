@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { BarChart3, Settings, CreditCard, AlertCircle } from 'lucide-react'
+import { BarChart3, Settings, CreditCard, AlertCircle, LogOut } from 'lucide-react'
 
 const navItems = [
   { label: 'Campaigns', href: '/dashboard', icon: BarChart3 },
@@ -17,6 +17,11 @@ const navItems = [
 export function DashboardSidebar() {
   const pathname = usePathname()
   const [isExpanded, setIsExpanded] = useState(false)
+
+  const handleLogout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' })
+    window.location.href = '/'
+  }
 
   return (
     <motion.aside
@@ -59,18 +64,21 @@ export function DashboardSidebar() {
         })}
       </nav>
 
-      <motion.div className="flex items-center gap-3 px-3 py-3 border-t border-[rgba(255,255,255,0.06)]">
-        <div className="w-8 h-8 rounded-full bg-[#C8F135] flex items-center justify-center text-[#080808] text-[12px] font-medium flex-shrink-0">
-          JD
-        </div>
-        <motion.span
-          className="text-[13px] text-[#F0EDE6]"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: isExpanded ? 1 : 0 }}
-          transition={{ delay: isExpanded ? 0.1 : 0 }}
+      <motion.div className="space-y-2 pt-4 border-t border-[rgba(255,255,255,0.06)]">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-3 rounded text-[#8A8782] hover:text-[#F56565] transition-colors duration-200"
         >
-          John Doe
-        </motion.span>
+          <LogOut className="w-5 h-5 flex-shrink-0" />
+          <motion.span
+            className="text-[13px] whitespace-nowrap"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isExpanded ? 1 : 0 }}
+            transition={{ delay: isExpanded ? 0.1 : 0 }}
+          >
+            Sign out
+          </motion.span>
+        </button>
       </motion.div>
     </motion.aside>
   )

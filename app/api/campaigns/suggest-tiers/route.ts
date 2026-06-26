@@ -1,23 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getSession } from '@/lib/session'
 import { suggestRewardTiers } from '@/lib/claude'
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const body = await req.json()
-    const { description } = body
-
-    if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
-      return NextResponse.json([
-        { min_referrals: 10, reward_label: 'Top 10', tier_order: 1 },
-        { min_referrals: 50, reward_label: 'Top 50', tier_order: 2 },
-        { min_referrals: 200, reward_label: 'Top 200', tier_order: 3 },
-      ])
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 })
     }
 
-    const suggestions = await suggestRewardTiers(description)
-    return NextResponse.json(suggestions)
+    const body = await request.json()
+    const { description } = body
+
+    if (!description) {
+      return NextResponse.json({ message: 'description is required' }, { status: 400 })
+    }
+
+    const tiers = await suggestRewardTiers(description)
+
+    return NextResponse.json({
+      tiers: tiers.map((tier) => ({
+        minReferrals: tier.min_referrals,
+        rewardLabel: tier.reward_label,
+      })),
+    })
   } catch (error) {
-    console.error('Failed to suggest tiers:', error)
-    return NextResponse.json({ error: 'Failed to suggest tiers' }, { status: 500 })
+    console.error('[v0] Reward tier suggestion error:', error)
+    return NextResponse.json({ message: 'Failed to suggest reward tiers' }, { status: 500 })
   }
 }

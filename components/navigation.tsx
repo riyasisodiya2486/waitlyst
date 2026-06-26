@@ -60,7 +60,7 @@ export function Navigation() {
           Sign in
         </Link>
         <Link
-          href="/dashboard"
+          href="/signup"
           className="dm-mono text-[13px] font-medium text-[#080808] bg-[#C8F135] hover:bg-[#d4f55a] px-[18px] py-[9px] rounded transition-all duration-150 interactive inline-block"
         >
           Get started →
