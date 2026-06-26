@@ -7,13 +7,16 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "setup:dynamo": "tsx scripts/setup-dynamodb.ts"
+    "setup:dynamo": "tsx scripts/setup-dynamodb.ts",
+    "migrate": "tsx scripts/migrate-add-password-hash.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",
     "@auth/core": "^0.34.3",
     "@auth/pg-adapter": "^1.11.2",
     "@aws-sdk/client-dynamodb": "^3.1070.0",
+    "@aws-sdk/client-sts": "^3.1075.0",
+    "@aws-sdk/credential-providers": "^3.1075.0",
     "@aws-sdk/dsql-signer": "^3.1070.0",
     "@aws-sdk/lib-dynamodb": "^3.1070.0",
     "@base-ui/react": "^1.5.0",
@@ -45,6 +48,7 @@
     "@types/uuid": "^11.0.0",
     "postcss": "^8.5",
     "tailwindcss": "^4.2.0",
+    "tsx": "^4.22.4",
     "typescript": "5.7.3"
   },
   "pnpm": {

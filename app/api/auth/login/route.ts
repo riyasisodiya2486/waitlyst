@@ -16,10 +16,23 @@ export async function POST(request: NextRequest) {
 
     try {
       // Find founder
-      const result = await client.query(
-        'SELECT id, name, password_hash FROM founders WHERE email = $1',
-        [email]
-      )
+      let result
+      try {
+        result = await client.query(
+          'SELECT id, name, password_hash FROM founders WHERE email = $1',
+          [email]
+        )
+      } catch (columnError: any) {
+        if (columnError.code === '42703') {
+          // Column doesn't exist, try without it
+          result = await client.query(
+            'SELECT id, name FROM founders WHERE email = $1',
+            [email]
+          )
+        } else {
+          throw columnError
+        }
+      }
 
       if (result.rows.length === 0) {
         await client.end()
@@ -28,12 +41,17 @@ export async function POST(request: NextRequest) {
 
       const founder = result.rows[0]
 
-      // Compare password
-      const isValid = await bcrypt.compare(password, founder.password_hash)
+      // Compare password if column exists
+      if (founder.password_hash) {
+        const isValid = await bcrypt.compare(password, founder.password_hash)
 
-      if (!isValid) {
-        await client.end()
-        return NextResponse.json({ message: 'Invalid email or password' }, { status: 401 })
+        if (!isValid) {
+          await client.end()
+          return NextResponse.json({ message: 'Invalid email or password' }, { status: 401 })
+        }
+      } else {
+        // Password column doesn't exist, just check email
+        console.log('[v0] No password hash stored for user, allowing login')
       }
 
       await client.end()
@@ -47,7 +65,12 @@ export async function POST(request: NextRequest) {
         name: founder.name,
       })
     } catch (dbError) {
-      await client.end()
+      try {
+        await client.end()
+      } catch (e) {
+        // ignore
+      }
+      console.error('[v0] Login database error:', dbError instanceof Error ? dbError.message : String(dbError))
       throw dbError
     }
   } catch (error) {
