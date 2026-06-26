@@ -1,43 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { execute } from '@/lib/dsql'
+import { getDbClient } from '@/lib/db'
+import Stripe from 'stripe'
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || ''
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY
+const stripe = stripeSecretKey
+  ? new Stripe(stripeSecretKey, {
+      apiVersion: '2024-12-15.acacia',
+    })
+  : null
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
+  if (!stripe) {
+    return NextResponse.json({ message: 'Stripe is not configured' }, { status: 503 })
+  }
+
+  const body = await request.text()
+  const signature = request.headers.get('stripe-signature')
+
+  if (!signature) {
+    return NextResponse.json({ message: 'No signature' }, { status: 400 })
+  }
+
+  let event: Stripe.Event
+
   try {
-    const body = await req.text()
-    const signature = req.headers.get('stripe-signature') || ''
-
-    if (!webhookSecret) {
-      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 400 })
-    }
-
-    // Dynamically import Stripe to avoid initialization errors during build
-    const Stripe = require('stripe').default
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
-
-    let event
-    try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
-    } catch (err: any) {
-      return NextResponse.json({ error: `Webhook signature verification failed: ${err.message}` }, { status: 400 })
-    }
-
-    if (event.type === 'customer.subscription.created' || event.type === 'customer.subscription.updated') {
-      const subscription = event.data.object as any
-      const customerId = subscription.customer
-
-      await execute(`UPDATE founders SET plan = $1 WHERE stripe_customer_id = $2`, ['pro', customerId])
-    } else if (event.type === 'customer.subscription.deleted') {
-      const subscription = event.data.object as any
-      const customerId = subscription.customer
-
-      await execute(`UPDATE founders SET plan = $1 WHERE stripe_customer_id = $2`, ['free', customerId])
-    }
-
-    return NextResponse.json({ received: true })
+    event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET || '')
   } catch (error) {
-    console.error('[v0] Webhook error:', error)
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
+    console.error('[v0] Webhook signature verification failed:', error)
+    return NextResponse.json({ message: 'Webhook signature verification failed' }, { status: 400 })
+  }
+
+  const client = await getDbClient()
+
+  try {
+    if (event.type === 'checkout.session.completed') {
+      const checkoutSession = event.data.object as Stripe.Checkout.Session
+
+      if (checkoutSession.customer && checkoutSession.subscription) {
+        // Update founder plan to pro
+        await client.query(
+          'UPDATE founders SET plan = $1 WHERE stripe_customer_id = $2',
+          ['pro', checkoutSession.customer as string]
+        )
+      }
+    } else if (event.type === 'customer.subscription.deleted') {
+      const subscription = event.data.object as Stripe.Subscription
+
+      if (subscription.customer) {
+        // Downgrade founder plan to free
+        await client.query(
+          'UPDATE founders SET plan = $1 WHERE stripe_customer_id = $2',
+          ['free', subscription.customer as string]
+        )
+      }
+    }
+
+    await client.end()
+    return NextResponse.json({ message: 'Webhook processed successfully' })
+  } catch (error) {
+    await client.end()
+    console.error('[v0] Webhook processing error:', error)
+    return NextResponse.json({ message: 'Webhook processing failed' }, { status: 500 })
   }
 }
