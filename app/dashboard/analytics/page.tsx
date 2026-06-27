@@ -3,7 +3,6 @@
 import { motion } from 'framer-motion'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { Navigation } from '@/components/navigation'
-import { CustomCursor } from '@/components/custom-cursor'
 
 const itemVariants = {
   hidden: { opacity: 0, y: 24 },
@@ -21,7 +20,6 @@ const itemVariants = {
 export default function Analytics() {
   return (
     <main className="relative bg-[#080808] text-[#F0EDE6] min-h-screen">
-      <CustomCursor />
       <Navigation />
       <DashboardSidebar />
 

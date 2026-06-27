@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Navigation } from '@/components/navigation'
 import { HeroBackground } from '@/components/hero-background'
-import { CustomCursor } from '@/components/custom-cursor'
 import { mockLeaderboardData } from '@/lib/mock-data'
 import { Copy, CheckCircle2 } from 'lucide-react'
 
@@ -73,7 +72,6 @@ export default function WaitlistPage() {
 
   return (
     <main className="relative bg-[#080808] text-[#F0EDE6] min-h-screen">
-      <CustomCursor />
       <Navigation />
 
       {/* Hero Section */}
