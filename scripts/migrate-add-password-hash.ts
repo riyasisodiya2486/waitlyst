@@ -1,6 +1,30 @@
 import { Client } from 'pg'
 import { DsqlSigner } from '@aws-sdk/dsql-signer'
 import { STSClient, AssumeRoleWithWebIdentityCommand } from '@aws-sdk/client-sts'
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
+
+// Load .env.development.local so the script works when run standalone
+function loadEnv() {
+  try {
+    const envPath = resolve(process.cwd(), '.env.development.local')
+    const lines = readFileSync(envPath, 'utf8').split('\n')
+    for (const line of lines) {
+      const t = line.trim()
+      if (!t || t.startsWith('#')) continue
+      const eq = t.indexOf('=')
+      if (eq === -1) continue
+      const k = t.slice(0, eq).trim()
+      let v = t.slice(eq + 1).trim()
+      if ((v.startsWith("'") && v.endsWith("'")) || (v.startsWith('"') && v.endsWith('"'))) v = v.slice(1, -1)
+      if (!process.env[k]) process.env[k] = v
+    }
+  } catch (e) {
+    // .env.development.local may not exist in CI
+  }
+}
+loadEnv()
+
 
 async function runMigration() {
   console.log('[v0] Starting migration: add password_hash column to founders table...')
@@ -35,27 +59,38 @@ async function runMigration() {
       throw new Error('VERCEL_OIDC_TOKEN not found in environment')
     }
 
-    // Create DSQL signer and get the token generator
+    // Create DSQL signer. In @aws-sdk/dsql-signer v3.x:
+    // - hostname is a REQUIRED constructor param (not passed to getDbConnect*)
+    // - getDbConnectAdminAuthToken() takes NO params and is needed for the `admin` user
     const signer = new DsqlSigner({
+      hostname: process.env.PGHOST || '',
       region: process.env.AWS_REGION || 'us-east-1',
       credentials,
     })
 
     // Create database client with password generator function
+    // Pre-resolve hostname via Node dns to bypass libuv getaddrinfo inconsistency on Windows
+    const { resolve4 } = await import('dns/promises')
+    let pgHost: string = process.env.PGHOST || ''
+    try {
+      const ips = await resolve4(pgHost)
+      console.log('[v0] Resolved', pgHost, '->', ips[0])
+      pgHost = ips[0]
+    } catch {
+      console.log('[v0] DNS pre-resolution failed, using hostname directly')
+    }
+
+    // Eagerly fetch the token so pg gets a plain string (more reliable on Windows)
+    const adminToken = await signer.getDbConnectAdminAuthToken()
+    console.log('[v0] Admin auth token obtained, length:', adminToken.length)
+
     client = new Client({
-      host: process.env.PGHOST,
+      host: pgHost,
       user: process.env.PGUSER,
       database: process.env.PGDATABASE,
       port: 5432,
-      ssl: true,
-      password: async () => {
-        // Generate IAM authentication token using SigV4
-        return await signer.getDbConnectAuthToken({
-          hostname: process.env.PGHOST || '',
-          port: 5432,
-          username: process.env.PGUSER || '',
-        })
-      },
+      ssl: { servername: process.env.PGHOST },
+      password: adminToken,
     })
 
     await client.connect()

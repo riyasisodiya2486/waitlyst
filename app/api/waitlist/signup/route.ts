@@ -84,13 +84,16 @@ export async function POST(request: NextRequest) {
       await client.end()
 
       // Log to DynamoDB
-      await logReferralEvent({
+      await logReferralEvent(
         campaignId,
-        type: referralCode ? 'referral' : 'signup',
-        email,
-        ipAddress,
-        referredBy: referralCode,
-      })
+        referralCode ? 'referral' : 'signup',
+        {
+          email,
+          referralCode,
+          ipAddress,
+          referredBy: referralCode,
+        }
+      )
 
       return NextResponse.json({
         rank,

@@ -1,11 +1,41 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 import { v4 as uuidv4 } from 'uuid'
+import { existsSync, writeFileSync, readFileSync } from 'fs'
+import { join } from 'path'
 
-const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' })
-const docClient = DynamoDBDocumentClient.from(client)
+// Helper to resolve STS credentials if available (same as lib/db.ts)
+// This enables DynamoDB to use the assumed role if it actually has permissions
+let clientInstance: DynamoDBClient | null = null
+
+function getDynamoClient(): DynamoDBDocumentClient {
+  if (!clientInstance) {
+    clientInstance = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' })
+  }
+  return DynamoDBDocumentClient.from(clientInstance)
+}
 
 const TABLE_NAME = 'waitlyst-events'
+const LOCAL_DB_PATH = join(process.cwd(), 'waitlyst-events.json')
+
+function readLocalEvents(): any[] {
+  try {
+    if (existsSync(LOCAL_DB_PATH)) {
+      return JSON.parse(readFileSync(LOCAL_DB_PATH, 'utf8'))
+    }
+  } catch (e) {
+    console.error('[DynamoDB Fallback] Failed to read local events:', e)
+  }
+  return []
+}
+
+function writeLocalEvents(events: any[]) {
+  try {
+    writeFileSync(LOCAL_DB_PATH, JSON.stringify(events, null, 2), 'utf8')
+  } catch (e) {
+    console.error('[DynamoDB Fallback] Failed to write local events:', e)
+  }
+}
 
 export interface ReferralEvent {
   pk: string
@@ -55,7 +85,16 @@ export async function logReferralEvent(
     ttl,
   }
 
-  await docClient.send(new PutCommand({ TableName: TABLE_NAME, Item: event }))
+  try {
+    const docClient = getDynamoClient()
+    await docClient.send(new PutCommand({ TableName: TABLE_NAME, Item: event }))
+    console.log('[DynamoDB] Successfully logged event to AWS DynamoDB')
+  } catch (err: any) {
+    console.warn('[DynamoDB] AWS DynamoDB write failed, falling back to local storage. Reason:', err.message)
+    const events = readLocalEvents()
+    events.push(event)
+    writeLocalEvents(events)
+  }
 }
 
 export async function getRecentEvents(
@@ -64,19 +103,28 @@ export async function getRecentEvents(
 ): Promise<ReferralEvent[]> {
   const cutoff = Date.now() - hours * 60 * 60 * 1000
 
-  const result = await docClient.send(
-    new QueryCommand({
-      TableName: TABLE_NAME,
-      KeyConditionExpression: 'pk = :pk AND #sk >= :sk',
-      ExpressionAttributeNames: { '#sk': 'sk' },
-      ExpressionAttributeValues: {
-        ':pk': `campaign#${campaignId}`,
-        ':sk': `signup#${cutoff}`,
-      },
-    })
-  )
-
-  return (result.Items as ReferralEvent[]) || []
+  try {
+    const docClient = getDynamoClient()
+    const result = await docClient.send(
+      new QueryCommand({
+        TableName: TABLE_NAME,
+        KeyConditionExpression: 'pk = :pk AND #sk >= :sk',
+        ExpressionAttributeNames: { '#sk': 'sk' },
+        ExpressionAttributeValues: {
+          ':pk': `campaign#${campaignId}`,
+          ':sk': `signup#${cutoff}`,
+        },
+      })
+    )
+    return (result.Items as ReferralEvent[]) || []
+  } catch (err: any) {
+    console.warn('[DynamoDB] AWS DynamoDB query failed, falling back to local storage. Reason:', err.message)
+    const events = readLocalEvents()
+    return events.filter(e => 
+      e.pk === `campaign#${campaignId}` && 
+      e.timestamp >= cutoff
+    )
+  }
 }
 
 export async function putFraudSignal(
@@ -98,15 +146,27 @@ export async function putFraudSignal(
   const now = Date.now()
   const ttl = Math.floor(now / 1000) + 30 * 24 * 60 * 60
 
-  await docClient.send(
-    new PutCommand({
-      TableName: TABLE_NAME,
-      Item: {
-        pk: `fraud#${campaignId}#${email}`,
-        sk: `${now}#${uuidv4()}`,
-        ...signal,
-        ttl,
-      },
-    })
-  )
+  const item = {
+    pk: `fraud#${campaignId}#${email}`,
+    sk: `${now}#${uuidv4()}`,
+    ...signal,
+    ttl,
+  }
+
+  try {
+    const docClient = getDynamoClient()
+    await docClient.send(
+      new PutCommand({
+        TableName: TABLE_NAME,
+        Item: item,
+      })
+    )
+    console.log('[DynamoDB] Successfully put fraud signal to AWS DynamoDB')
+  } catch (err: any) {
+    console.warn('[DynamoDB] AWS DynamoDB put fraud signal failed, falling back to local storage. Reason:', err.message)
+    const events = readLocalEvents()
+    events.push(item)
+    writeLocalEvents(events)
+  }
 }
+

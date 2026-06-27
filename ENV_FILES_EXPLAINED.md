@@ -262,3 +262,4 @@ async function myServerFunction() {
 2. Each developer adds values to their own `.env.development.local`
 3. Never send actual secrets over email/Slack
 4. Use a secrets manager (1Password, Doppler, etc.) for production
+

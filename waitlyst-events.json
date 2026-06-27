@@ -1,0 +1,24 @@
+[
+  {
+    "pk": "campaign#1f6ceea6-b2f6-46d7-a3f5-d6ae738af99c",
+    "sk": "signup#1782581304722#2421a8d5-630a-463f-a36a-a4756f40d081",
+    "type": "signup",
+    "campaign_id": "1f6ceea6-b2f6-46d7-a3f5-d6ae738af99c",
+    "email": "dynamo-test@mailtest.com",
+    "ip_address": "::1",
+    "timestamp": 1782581304722,
+    "ttl": 1785173304
+  },
+  {
+    "pk": "campaign#1f6ceea6-b2f6-46d7-a3f5-d6ae738af99c",
+    "sk": "referral#1782581355660#7c010933-ac33-4561-b0f2-e34a22792d91",
+    "type": "referral",
+    "campaign_id": "1f6ceea6-b2f6-46d7-a3f5-d6ae738af99c",
+    "email": "referred-user@mailtest.com",
+    "referral_code": "E77IeRQj",
+    "ip_address": "::1",
+    "referred_by": "E77IeRQj",
+    "timestamp": 1782581355660,
+    "ttl": 1785173355
+  }
+]

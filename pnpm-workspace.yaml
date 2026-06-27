@@ -1,0 +1,8 @@
+allowBuilds:
+  esbuild: true
+  msw: true
+  sharp: true
+minimumReleaseAgeExclude:
+  - '@aws-sdk/client-dynamodb@3.1070.0'
+  - '@aws-sdk/dsql-signer@3.1070.0'
+  - '@aws-sdk/lib-dynamodb@3.1070.0'

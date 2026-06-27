@@ -1,7 +1,51 @@
 import { DynamoDBClient, CreateTableCommand } from '@aws-sdk/client-dynamodb'
+import { STSClient, AssumeRoleWithWebIdentityCommand } from '@aws-sdk/client-sts'
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
+
+// Load .env.development.local
+function loadEnv() {
+  try {
+    const envPath = resolve(process.cwd(), '.env.development.local')
+    const lines = readFileSync(envPath, 'utf8').split('\n')
+    for (const line of lines) {
+      const t = line.trim()
+      if (!t || t.startsWith('#')) continue
+      const eq = t.indexOf('=')
+      if (eq === -1) continue
+      const k = t.slice(0, eq).trim()
+      let v = t.slice(eq + 1).trim()
+      if ((v.startsWith("'") && v.endsWith("'")) || (v.startsWith('"') && v.endsWith('"'))) v = v.slice(1, -1)
+      if (!process.env[k]) process.env[k] = v
+    }
+  } catch (e) {}
+}
+loadEnv()
+
+async function resolveCredentials() {
+  if (process.env.VERCEL_OIDC_TOKEN && process.env.AWS_ROLE_ARN) {
+    const stsClient = new STSClient({ region: process.env.AWS_REGION || 'us-east-1' })
+    const command = new AssumeRoleWithWebIdentityCommand({
+      RoleArn: process.env.AWS_ROLE_ARN,
+      RoleSessionName: 'waitlyst-app', // Must match waitlyst-app session name just in case
+      WebIdentityToken: process.env.VERCEL_OIDC_TOKEN,
+    })
+    const response = await stsClient.send(command)
+    return {
+      accessKeyId: response.Credentials?.AccessKeyId || '',
+      secretAccessKey: response.Credentials?.SecretAccessKey || '',
+      sessionToken: response.Credentials?.SessionToken || '',
+    }
+  }
+  throw new Error('OIDC Credentials missing')
+}
 
 async function setupDynamoDB() {
-  const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' })
+  const credentials = await resolveCredentials()
+  const client = new DynamoDBClient({
+    region: process.env.AWS_REGION || 'us-east-1',
+    credentials
+  })
 
   const command = new CreateTableCommand({
     TableName: 'waitlyst-events',

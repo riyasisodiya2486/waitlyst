@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDbClient } from '@/lib/db'
 
-export async function GET(request: NextRequest, { params }: { params: { campaignId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ campaignId: string }> }) {
   try {
-    const { campaignId } = params
+    const { campaignId } = await params
 
     const client = await getDbClient()
 

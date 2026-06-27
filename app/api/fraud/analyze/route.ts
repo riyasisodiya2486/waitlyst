@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { campaignId } = body
+    const campaignId = body.campaignId || body.campaign_id
 
     if (!campaignId) {
       return NextResponse.json({ message: 'campaignId is required' }, { status: 400 })
