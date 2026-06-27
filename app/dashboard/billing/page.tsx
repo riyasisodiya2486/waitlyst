@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { Navigation } from '@/components/navigation'
-import { CustomCursor } from '@/components/custom-cursor'
 import { createCheckoutSession, isDemo } from '@/lib/api-client'
 import { CheckCircle2, Circle } from 'lucide-react'
 
@@ -177,7 +176,6 @@ export default function Billing() {
   }
   return (
     <main className="relative bg-[#080808] text-[#F0EDE6] min-h-screen">
-      <CustomCursor />
       <Navigation />
       <DashboardSidebar />
 

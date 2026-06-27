@@ -32,11 +32,11 @@
   }
 
   body {
-    cursor: none;
+    cursor: auto;
   }
 
   html {
-    @apply scroll-smooth;
+    scroll-behavior: auto;
   }
 
   button {

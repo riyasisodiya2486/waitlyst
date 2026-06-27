@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { Navigation } from '@/components/navigation'
 import { HeroBackground } from '@/components/hero-background'
-import { CustomCursor } from '@/components/custom-cursor'
 import { mockLeaderboardData, mockFeatures } from '@/lib/mock-data'
 
 const containerVariants = {
@@ -207,7 +206,6 @@ function FeatureCard({ feature, idx }: { feature: any; idx: number }) {
 export default function Home() {
   return (
     <main className="relative bg-[#080808] text-[#F0EDE6]">
-      <CustomCursor />
       <Navigation />
 
       {/* Hero Section */}

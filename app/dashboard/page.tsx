@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { Navigation } from '@/components/navigation'
-import { CustomCursor } from '@/components/custom-cursor'
 import { mockMetrics, mockCampaigns } from '@/lib/mock-data'
 import { fetchCampaigns, isDemo } from '@/lib/api-client'
 
@@ -85,7 +84,6 @@ export default function Dashboard() {
   }, [])
   return (
     <main className="relative bg-[#080808] text-[#F0EDE6] min-h-screen">
-      <CustomCursor />
       <Navigation />
       <DashboardSidebar />
 
