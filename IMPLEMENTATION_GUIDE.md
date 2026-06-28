@@ -19,7 +19,7 @@ This guide explains the complete implementation of email/password authentication
 ### 3. **AI Features (Claude)**
 - **Fraud Detection**: Analyzes signup patterns, IP addresses, and referral behavior
 - **Reward Tier Suggestions**: Generates personalized tier recommendations based on campaign descriptions
-- Uses Claude 3.5 Sonnet model via Anthropic SDK
+- Uses Llama 3.3 70B via Groq SDK
 
 ### 4. **Real-time Event Logging**
 - DynamoDB integration for storing signup and referral events
@@ -46,7 +46,7 @@ If this column already exists, no action is needed.
 Add these to your project settings (Vars section):
 
 ```
-ANTHROPIC_API_KEY=your_anthropic_api_key
+GROQ_API_KEY=your_GROQ_API_KEY
 STRIPE_SECRET_KEY=your_stripe_secret_key
 STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
 STRIPE_PRICE_ID=price_xxxxx  (optional, for checkout)
@@ -83,7 +83,7 @@ ALTER TABLE founders ADD COLUMN password_hash TEXT;
 
 ### 4. Set Environment Variables
 Configure these in your Vercel project settings (Vars):
-- `ANTHROPIC_API_KEY` - From Anthropic console
+- `GROQ_API_KEY` - From Groq console
 - `STRIPE_SECRET_KEY` - From Stripe dashboard
 - `STRIPE_WEBHOOK_SECRET` - From Stripe webhooks
 - `NEXT_PUBLIC_APP_URL` - Your production URL
@@ -127,7 +127,7 @@ pnpm build
 - `/lib/db.ts` - Aurora DSQL connection manager
 
 ### AI Features
-- `/lib/claude.ts` - Claude integration (fraud analysis, tier suggestions)
+- `/lib/ai.ts` - Groq integration (fraud analysis, tier suggestions)
 - `/app/api/fraud/analyze/route.ts` - Fraud analysis API
 - `/app/api/campaigns/suggest-tiers/route.ts` - Reward tier API
 
@@ -217,7 +217,7 @@ pnpm build
 - Ensure webhook is in "enabled" state
 
 ### Fraud Analysis Not Working
-- Verify `ANTHROPIC_API_KEY` is set
+- Verify `GROQ_API_KEY` is set
 - Check DynamoDB table exists (run `pnpm setup:dynamo`)
 - Events must exist for last 24 hours in DynamoDB
 
@@ -228,3 +228,4 @@ For issues or questions:
 2. Review this guide's troubleshooting section
 3. Verify all environment variables are set correctly
 4. Ensure database tables exist with correct schema
+

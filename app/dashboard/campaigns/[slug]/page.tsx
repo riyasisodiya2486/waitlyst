@@ -1,123 +1,53 @@
-'use client'
+import { notFound } from 'next/navigation'
+import { getDbClient } from '@/lib/db'
+import { CampaignDetailClient } from '@/components/campaign-detail-client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'next/navigation'
-import { Copy } from 'lucide-react'
-import { DashboardSidebar } from '@/components/dashboard-sidebar'
-import { Navigation } from '@/components/navigation'
-import { fetchCampaign, fetchLeaderboard } from '@/lib/api-client'
+export default async function CampaignDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const client = await getDbClient()
 
-type Campaign = {
-  id: string
-  title?: string
-  name: string
-  slug: string
-  status: string
-  signups: number
-  referralRate: number
-}
+  try {
+    const campaignResult = await client.query(
+      `SELECT
+        c.id,
+        c.title,
+        c.slug,
+        c.description,
+        c.status,
+        COUNT(p.id)::int AS signups,
+        COALESCE(SUM(p.referral_count), 0)::int AS total_referrals
+      FROM campaigns c
+      LEFT JOIN participants p ON p.campaign_id = c.id
+      WHERE c.slug = $1
+      GROUP BY c.id, c.title, c.slug, c.description, c.status`,
+      [slug]
+    )
 
-type LeaderboardEntry = {
-  email: string
-  rank: number
-  referral_count?: number
-}
-
-export default function CampaignDetail() {
-  const params = useParams<{ slug: string }>()
-  const slug = params.slug
-
-  const [campaign, setCampaign] = useState<Campaign | null>(null)
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
-  const [loading, setLoading] = useState(true)
-  const [copied, setCopied] = useState(false)
-
-  async function loadCampaign() {
-    try {
-      setLoading(true)
-      const campaignData = await fetchCampaign(slug)
-      setCampaign(campaignData)
-      if (campaignData.id) {
-        const leaderboardData = await fetchLeaderboard(campaignData.id)
-        setLeaderboard(leaderboardData)
-      }
-    } catch (err) {
-      console.error('[v0] Failed to load campaign detail:', err)
-    } finally {
-      setLoading(false)
+    if (!campaignResult.rows.length) {
+      notFound()
     }
+
+    const campaign = campaignResult.rows[0]
+    const leaderboardResult = await client.query(
+      'SELECT email, rank, referral_count FROM participants WHERE campaign_id = $1 ORDER BY rank ASC LIMIT 50',
+      [campaign.id]
+    )
+
+    return (
+      <CampaignDetailClient
+        initialCampaign={{
+          id: campaign.id,
+          name: campaign.title,
+          title: campaign.title,
+          slug: campaign.slug,
+          status: campaign.status,
+          signups: Number(campaign.signups || 0),
+          referralRate: Number(campaign.signups || 0) > 0 ? Math.round((Number(campaign.total_referrals || 0) / Number(campaign.signups)) * 100) : 0,
+        }}
+        initialLeaderboard={leaderboardResult.rows}
+      />
+    )
+  } finally {
+    await client.end()
   }
-
-  useEffect(() => {
-    loadCampaign()
-    const interval = setInterval(loadCampaign, 5000)
-    return () => clearInterval(interval)
-  }, [slug])
-
-  const publicLink = useMemo(() => {
-    if (!campaign || typeof window === 'undefined') return ''
-    return `${window.location.origin}/w/${campaign.slug}`
-  }, [campaign])
-
-  function handleCopyLink() {
-    if (!publicLink) return
-    navigator.clipboard.writeText(publicLink)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
-
-  return (
-    <main className="relative min-h-screen bg-[#080808] text-[#F0EDE6]">
-      <Navigation />
-      <DashboardSidebar />
-
-      <div className="ml-14 px-8 pt-20">
-        <div className="mx-auto max-w-[1200px] space-y-8">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h1 className="instrument-serif text-[32px]">{campaign?.title || campaign?.name || 'Campaign'}</h1>
-              <p className="mt-2 text-[14px] text-[#8A8782]">{loading ? 'Loading...' : `Status: ${campaign?.status || 'draft'}`}</p>
-            </div>
-            <button onClick={handleCopyLink} className="flex items-center gap-2 rounded border border-[rgba(255,255,255,0.1)] px-4 py-3 text-[13px] text-[#C8F135]">
-              <Copy className="h-4 w-4" />
-              {copied ? 'Copied' : 'Copy public link'}
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
-              <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Total Signups</div>
-              <div className="mt-2 dm-mono text-[36px] text-[#C8F135]">{campaign?.signups || 0}</div>
-            </div>
-            <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
-              <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Referral Rate</div>
-              <div className="mt-2 dm-mono text-[36px] text-[#C8F135]">{campaign?.referralRate || 0}%</div>
-            </div>
-            <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6 md:col-span-2">
-              <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Public URL</div>
-              <div className="mt-2 text-[14px] text-[#8A8782] break-all">{publicLink || 'Waiting for campaign data...'}</div>
-            </div>
-          </div>
-
-          <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F]">
-            <div className="border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
-              <h2 className="dm-mono text-[12px] uppercase text-[#5C5955]">Leaderboard</h2>
-            </div>
-            <div className="divide-y divide-[rgba(255,255,255,0.04)]">
-              {leaderboard.length === 0 && !loading && <div className="px-6 py-6 text-[14px] text-[#8A8782]">No leaderboard entries yet.</div>}
-              {leaderboard.map((entry) => (
-                <div key={`${entry.email}-${entry.rank}`} className="flex items-center justify-between px-6 py-4 text-[13px]">
-                  <div className="flex items-center gap-4">
-                    <span className="dm-mono w-8 text-[#5C5955]">#{entry.rank}</span>
-                    <span>{entry.email}</span>
-                  </div>
-                  <span className="dm-mono rounded bg-[rgba(200,241,53,0.08)] px-3 py-1 text-[#C8F135]">+{entry.referral_count || 0}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  )
 }

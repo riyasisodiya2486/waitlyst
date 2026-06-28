@@ -22,7 +22,7 @@ A template file that shows the **structure and names** of all environment variab
 AUTH_SECRET=your-jwt-secret-key-generate-with-openssl
 PGHOST=your-aurora-dsql-host.region.rds.amazonaws.com
 PGUSER=your-username
-ANTHROPIC_API_KEY=sk-ant-your-api-key
+GROQ_API_KEY=sk-ant-your-api-key
 ```
 
 **Why commit it?**
@@ -56,7 +56,7 @@ The **actual configuration file** for your local development environment contain
 AUTH_SECRET=6h5K8mJp9L2qR4tW7vX9zA0bC3d5E7fG9h1j3k5m7n  # Real secret!
 PGHOST=cluster-abc123.us-east-1.rds.amazonaws.com      # Real host!
 PGUSER=admin                                             # Real username!
-ANTHROPIC_API_KEY=sk-ant-kJ8f9hg7d6c5b4a3z2y1w0       # Real API key!
+GROQ_API_KEY=sk-ant-kJ8f9hg7d6c5b4a3z2y1w0       # Real API key!
 ```
 
 **Why NOT commit it?**
@@ -152,7 +152,7 @@ AWS_ROLE_ARN=arn:aws:iam::123456789:role/your-role
 # ============================================
 # AI (Claude)
 # ============================================
-ANTHROPIC_API_KEY=sk-ant-your-api-key
+GROQ_API_KEY=sk-ant-your-api-key
 
 # ============================================
 # PAYMENTS (Stripe)
@@ -262,4 +262,5 @@ async function myServerFunction() {
 2. Each developer adds values to their own `.env.development.local`
 3. Never send actual secrets over email/Slack
 4. Use a secrets manager (1Password, Doppler, etc.) for production
+
 

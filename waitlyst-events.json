@@ -64,5 +64,27 @@
     "referred_by": "d2LXWnA8",
     "timestamp": 1782643636363,
     "ttl": 1785235636
+  },
+  {
+    "pk": "campaign#7ede27ae-f2a4-44f4-8709-deba18d50f52",
+    "sk": "signup#1782649632493#bf341dd0-0815-4047-bb3e-0d0ce4057320",
+    "type": "signup",
+    "campaign_id": "7ede27ae-f2a4-44f4-8709-deba18d50f52",
+    "email": "mia.hart@gmail.com",
+    "ip_address": "::1",
+    "timestamp": 1782649632493,
+    "ttl": 1785241632
+  },
+  {
+    "pk": "campaign#7ede27ae-f2a4-44f4-8709-deba18d50f52",
+    "sk": "referral#1782649643712#1f0586f0-4173-4a4f-9eb7-705412ae2e01",
+    "type": "referral",
+    "campaign_id": "7ede27ae-f2a4-44f4-8709-deba18d50f52",
+    "email": "noah.grant@outlook.com",
+    "referral_code": "RJ5OtYAl",
+    "ip_address": "::1",
+    "referred_by": "RJ5OtYAl",
+    "timestamp": 1782649643712,
+    "ttl": 1785241643
   }
 ]

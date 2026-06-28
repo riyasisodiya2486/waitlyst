@@ -171,6 +171,8 @@ When deploying to production:
 3. Update `NEXTAUTH_URL` to production domain
 4. Set up Aurora DSQL database
 5. Configure Stripe keys if using payments
-6. Add Anthropic API key for AI features
+6. Add Groq API key for AI features
 
 See `LOCAL_SETUP.md` for complete setup instructions.
+
+

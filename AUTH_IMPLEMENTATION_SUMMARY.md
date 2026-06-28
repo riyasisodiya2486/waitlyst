@@ -58,7 +58,7 @@ AWS_ROLE_ARN=arn:aws:iam::...
 
 ### Optional (AI & Payments)
 ```
-ANTHROPIC_API_KEY=sk-ant-...
+GROQ_API_KEY=sk-ant-...
 STRIPE_SECRET_KEY=sk_test_...
 ```
 
@@ -180,3 +180,4 @@ This is handled automatically by the signup API - it will try to add this column
 3. Add two-factor authentication (2FA)
 4. Add role-based access control (RBAC)
 5. Rate limiting on login/signup endpoints
+

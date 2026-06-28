@@ -40,7 +40,7 @@ AWS_ROLE_ARN=arn:aws:iam::ACCOUNT_ID:role/YOUR-ROLE
 ### 4. Optional: Add API Keys
 If using Claude (AI features):
 ```
-ANTHROPIC_API_KEY=sk-ant-xxxxx
+GROQ_API_KEY=sk-ant-xxxxx
 ```
 
 If using Stripe (payments):
@@ -109,3 +109,4 @@ This app uses **email/password authentication** (NO Google OAuth).
 5. JWT signed with AUTH_SECRET
 
 **No env vars needed for auth setup** - just AUTH_SECRET!
+

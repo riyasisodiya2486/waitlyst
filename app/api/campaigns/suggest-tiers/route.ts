@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
-import { suggestRewardTiers } from '@/lib/claude'
+import { suggestRewardTiers } from '@/lib/ai'
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,3 +35,4 @@ export async function POST(request: NextRequest) {
     })
   }
 }
+

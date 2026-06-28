@@ -17,3 +17,5 @@ node_modules
 tsconfig.tsbuildinfo
 tmp-*.log
 tmp-*.err
+.vercel
+.env*

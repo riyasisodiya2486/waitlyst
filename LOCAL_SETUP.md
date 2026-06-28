@@ -45,7 +45,7 @@ AWS_ROLE_ARN=arn:aws:iam::YOUR_ACCOUNT:role/YOUR_ROLE
 
 #### Optional Services
 - **Stripe**: For payment processing
-- **Claude/Anthropic**: For AI features (fraud detection, reward tier suggestions)
+- **Groq**: For AI features (fraud detection, reward tier suggestions)
 - **DynamoDB**: For event logging
 
 ## Local Development
@@ -122,7 +122,7 @@ waitlyst/
 │   ├── auth.ts           # NextAuth configuration
 │   ├── session.ts        # Session management
 │   ├── db.ts             # Database connection
-│   └── claude.ts         # Claude AI integration
+│   └── ai.ts         # Groq AI integration
 ├── components/           # React components
 └── public/              # Static assets
 ```
@@ -132,7 +132,7 @@ waitlyst/
 1. Configure Google OAuth credentials
 2. Set up Aurora DSQL database (or use demo mode)
 3. Add Stripe keys for payment features
-4. Add Anthropic API key for AI features
+4. Add Groq API key for AI features
 5. Deploy to Vercel when ready
 
 ## Support
@@ -141,3 +141,5 @@ For issues or questions, refer to:
 - Next.js Documentation: https://nextjs.org/docs
 - NextAuth.js: https://next-auth.js.org
 - Vercel: https://vercel.com/docs
+
+

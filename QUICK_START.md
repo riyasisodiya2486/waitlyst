@@ -32,7 +32,7 @@ ALTER TABLE founders ADD COLUMN password_hash TEXT;
 
 ### 2. Set Environment Variables
 Go to project Settings → Vars and add:
-- `ANTHROPIC_API_KEY` - Get from [anthropic.com](https://console.anthropic.com)
+- `GROQ_API_KEY` - Get from [console.groq.com](https://console.console.groq.com)
 - `STRIPE_SECRET_KEY` - Get from [stripe.com](https://dashboard.stripe.com)
 - `STRIPE_WEBHOOK_SECRET` - From Stripe webhooks
 - `NEXT_PUBLIC_APP_URL` - Your production URL
@@ -171,7 +171,7 @@ Response:
 - Provides parameterized query execution
 - Handles connection lifecycle
 
-### AI (`/lib/claude.ts`)
+### AI (`/lib/ai.ts`)
 - `analyzeFraud(events)` - Detect suspicious signups
 - `suggestRewardTiers(description)` - Generate tier ideas
 
@@ -221,7 +221,7 @@ lib/
 ├── session.ts                   # JWT session management
 ├── db.ts                        # Aurora DSQL connection
 ├── dynamo.ts                    # DynamoDB event logging
-└── claude.ts                    # Claude AI integration
+└── ai.ts                    # Groq AI integration
 components/
 ├── dashboard-sidebar.tsx        # Nav with logout
 └── [other components]
@@ -234,7 +234,7 @@ components/
 | Signup returns 500 | Check `PGHOST`, `PGUSER`, `PGDATABASE` env vars |
 | Login fails | Verify `password_hash` column exists in `founders` table |
 | Session not persisting | Check cookies are enabled and not blocked by SameSite |
-| Fraud analysis fails | Set `ANTHROPIC_API_KEY` and ensure DynamoDB table exists |
+| Fraud analysis fails | Set `GROQ_API_KEY` and ensure DynamoDB table exists |
 | Stripe checkout 503 | Set `STRIPE_SECRET_KEY` environment variable |
 
 ## Next: Deploy to Vercel
@@ -251,3 +251,4 @@ After deployment:
 1. Update `NEXT_PUBLIC_APP_URL` env var to production URL
 2. Configure Stripe webhook URL to `https://your-domain.com/api/webhooks/stripe`
 3. Test signup/login flow in production
+
