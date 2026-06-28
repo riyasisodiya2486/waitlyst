@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist } from 'next/font/google'
 import './globals.css'
-
-const geist = Geist({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Waitlyst - Viral Waitlist Platform',
@@ -24,9 +21,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-scroll-behavior="auto">
-      <body className={`${geist.className} bg-[#080808] text-[#F0EDE6] antialiased`}>
-        {children}
-      </body>
+      <body className="bg-[#080808] text-[#F0EDE6] antialiased">{children}</body>
     </html>
   )
 }

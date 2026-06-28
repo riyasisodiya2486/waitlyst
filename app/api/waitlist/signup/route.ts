@@ -20,7 +20,6 @@ export async function POST(request: NextRequest) {
     const client = await getDbClient()
 
     try {
-      // Find campaign by slug
       const campaignResult = await client.query('SELECT id FROM campaigns WHERE slug = $1', [campaignSlug])
 
       if (campaignResult.rows.length === 0) {
@@ -30,7 +29,6 @@ export async function POST(request: NextRequest) {
 
       const campaignId = campaignResult.rows[0].id
 
-      // Check if participant already exists
       const existing = await client.query(
         'SELECT id, rank, referral_code FROM participants WHERE campaign_id = $1 AND email = $2',
         [campaignId, email]
@@ -44,14 +42,10 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Get current rank (count + 1)
       const countResult = await client.query('SELECT COUNT(*) FROM participants WHERE campaign_id = $1', [campaignId])
-      const rank = parseInt(countResult.rows[0].count) + 1
+      const rank = parseInt(countResult.rows[0].count, 10) + 1
 
-      // Generate referral code
       const newReferralCode = nanoid(8)
-
-      // Insert participant
       const participantId = uuidv4()
       const now = new Date()
       const ipAddress = getClientIp(request)
@@ -61,7 +55,6 @@ export async function POST(request: NextRequest) {
         [participantId, campaignId, email, rank, newReferralCode, ipAddress, now]
       )
 
-      // If referred by someone, update referrer
       if (referralCode) {
         const referrer = await client.query(
           'SELECT id FROM participants WHERE campaign_id = $1 AND referral_code = $2',
@@ -69,31 +62,26 @@ export async function POST(request: NextRequest) {
         )
 
         if (referrer.rows.length > 0) {
-          await client.query(
-            'UPDATE participants SET referral_count = referral_count + 1 WHERE id = $1',
-            [referrer.rows[0].id]
-          )
+          await client.query('UPDATE participants SET referral_count = COALESCE(referral_count, 0) + 1 WHERE id = $1', [
+            referrer.rows[0].id,
+          ])
 
-          await client.query(
-            'UPDATE participants SET referred_by = $1 WHERE id = $2',
-            [referralCode, participantId]
-          )
+          await client.query('UPDATE participants SET referred_by = $1 WHERE id = $2', [referralCode, participantId])
         }
       }
 
       await client.end()
 
-      // Log to DynamoDB
-      await logReferralEvent(
-        campaignId,
-        referralCode ? 'referral' : 'signup',
-        {
+      try {
+        await logReferralEvent(campaignId, referralCode ? 'referral' : 'signup', {
           email,
           referralCode,
           ipAddress,
           referredBy: referralCode,
-        }
-      )
+        })
+      } catch (logError) {
+        console.warn('[v0] Referral logging failed silently:', logError)
+      }
 
       return NextResponse.json({
         rank,

@@ -4,8 +4,6 @@ import { v4 as uuidv4 } from 'uuid'
 import { existsSync, writeFileSync, readFileSync } from 'fs'
 import { join } from 'path'
 
-// Helper to resolve STS credentials if available (same as lib/db.ts)
-// This enables DynamoDB to use the assumed role if it actually has permissions
 let clientInstance: DynamoDBClient | null = null
 
 function getDynamoClient(): DynamoDBDocumentClient {
@@ -70,7 +68,7 @@ export async function logReferralEvent(
   }
 ): Promise<void> {
   const now = Date.now()
-  const ttl = Math.floor(now / 1000) + 30 * 24 * 60 * 60 // 30 days
+  const ttl = Math.floor(now / 1000) + 30 * 24 * 60 * 60
 
   const event: ReferralEvent = {
     pk: `campaign#${campaignId}`,
@@ -97,10 +95,7 @@ export async function logReferralEvent(
   }
 }
 
-export async function getRecentEvents(
-  campaignId: string,
-  hours: number = 24
-): Promise<ReferralEvent[]> {
+export async function getRecentEvents(campaignId: string, hours: number = 24): Promise<ReferralEvent[]> {
   const cutoff = Date.now() - hours * 60 * 60 * 1000
 
   try {
@@ -108,11 +103,14 @@ export async function getRecentEvents(
     const result = await docClient.send(
       new QueryCommand({
         TableName: TABLE_NAME,
-        KeyConditionExpression: 'pk = :pk AND #sk >= :sk',
-        ExpressionAttributeNames: { '#sk': 'sk' },
+        KeyConditionExpression: 'pk = :pk',
+        FilterExpression: '#timestamp >= :cutoff',
+        ExpressionAttributeNames: {
+          '#timestamp': 'timestamp',
+        },
         ExpressionAttributeValues: {
           ':pk': `campaign#${campaignId}`,
-          ':sk': `signup#${cutoff}`,
+          ':cutoff': cutoff,
         },
       })
     )
@@ -120,10 +118,7 @@ export async function getRecentEvents(
   } catch (err: any) {
     console.warn('[DynamoDB] AWS DynamoDB query failed, falling back to local storage. Reason:', err.message)
     const events = readLocalEvents()
-    return events.filter(e => 
-      e.pk === `campaign#${campaignId}` && 
-      e.timestamp >= cutoff
-    )
+    return events.filter((e) => e.pk === `campaign#${campaignId}` && e.timestamp >= cutoff)
   }
 }
 
@@ -169,4 +164,3 @@ export async function putFraudSignal(
     writeLocalEvents(events)
   }
 }
-

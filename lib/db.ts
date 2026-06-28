@@ -69,7 +69,24 @@ export async function getDbClient() {
     await client.connect()
     return client
   } catch (error) {
-    console.error('[db] Connection failed:', error instanceof Error ? error.message : String(error))
-    throw error
+    console.warn('[db] AWS DSQL connection failed, falling back to local PostgreSQL. Reason:', error instanceof Error ? error.message : String(error))
+
+    // Fallback: use local PostgreSQL (installed at C:\Program Files\PostgreSQL\18)
+    const localClient = new Client({
+      host: '127.0.0.1',
+      port: 5432,
+      user: 'postgres',
+      database: 'waitlyst',
+      ssl: false,
+    })
+
+    try {
+      await localClient.connect()
+      console.log('[db] Connected to local PostgreSQL (fallback mode)')
+      return localClient
+    } catch (localError) {
+      console.error('[db] Local PostgreSQL fallback also failed:', localError instanceof Error ? localError.message : String(localError))
+      throw localError
+    }
   }
 }

@@ -1,270 +1,192 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useMemo, useState } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
+import { Copy, CheckCircle2 } from 'lucide-react'
 import { Navigation } from '@/components/navigation'
 import { HeroBackground } from '@/components/hero-background'
-import { mockLeaderboardData } from '@/lib/mock-data'
-import { Copy, CheckCircle2 } from 'lucide-react'
+import { fetchCampaign, fetchLeaderboard, signupToWaitlist } from '@/lib/api-client'
+import { obfuscateEmail } from '@/lib/mock-data'
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
-  },
+type Campaign = {
+  id: string
+  title?: string
+  name: string
+  slug: string
+  description?: string
+  rewardTiers?: { minReferrals: number; rewardLabel: string }[]
 }
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring',
-      stiffness: 100,
-      damping: 18,
-    },
-  },
-}
-
-function CountUpNumber({ target }: { target: number }) {
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    let current = 0
-    const increment = Math.ceil(target / 60)
-    const interval = setInterval(() => {
-      current += increment
-      if (current >= target) {
-        current = target
-        clearInterval(interval)
-      }
-      setCount(current)
-    }, 20)
-
-    return () => clearInterval(interval)
-  }, [target])
-
-  return <span>{count}</span>
+type LeaderboardEntry = {
+  id?: string
+  email: string
+  rank: number
+  referral_count?: number
 }
 
 export default function WaitlistPage() {
-  const [hasSignedUp, setHasSignedUp] = useState(false)
-  const [email, setEmail] = useState('')
-  const [copied, setCopied] = useState(false)
-  const mockRank = 247
+  const params = useParams<{ slug: string }>()
+  const searchParams = useSearchParams()
+  const slug = params.slug
+  const referralCodeFromUrl = searchParams.get('ref') || undefined
 
-  const handleSignUp = () => {
-    if (email.trim()) {
-      setHasSignedUp(true)
+  const [campaign, setCampaign] = useState<Campaign | null>(null)
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [email, setEmail] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState<{ rank: number; referralCode: string } | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  async function loadCampaignData() {
+    try {
+      setLoading(true)
+      const campaignData = await fetchCampaign(slug)
+      setCampaign(campaignData)
+      if (campaignData.id) {
+        const leaderboardData = await fetchLeaderboard(campaignData.id)
+        setLeaderboard(leaderboardData)
+      }
+    } catch (err) {
+      console.error('[v0] Failed to load campaign page:', err)
+      setError('Could not load this campaign.')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleCopyReferral = () => {
-    navigator.clipboard.writeText('https://waitlyst.app/ref/demo-launch-abc123')
+  useEffect(() => {
+    loadCampaignData()
+    const interval = setInterval(loadCampaignData, 10000)
+    return () => clearInterval(interval)
+  }, [slug])
+
+  const referralLink = useMemo(() => {
+    if (!success || !campaign) return ''
+    if (typeof window === 'undefined') return ''
+    return `${window.location.origin}/w/${campaign.slug}?ref=${success.referralCode}`
+  }, [success, campaign])
+
+  async function handleSignUp() {
+    if (!campaign || !email.trim()) return
+
+    try {
+      setSubmitting(true)
+      setError('')
+      const response = await signupToWaitlist(campaign.slug, email.trim(), referralCodeFromUrl)
+      setSuccess(response)
+      if (campaign.id) {
+        const leaderboardData = await fetchLeaderboard(campaign.id)
+        setLeaderboard(leaderboardData)
+      }
+    } catch (err) {
+      console.error('[v0] Waitlist signup failed:', err)
+      setError('Could not join the waitlist right now.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  function handleCopyReferral() {
+    if (!referralLink) return
+    navigator.clipboard.writeText(referralLink)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
 
+  const rewardTiers = campaign?.rewardTiers || []
+
   return (
-    <main className="relative bg-[#080808] text-[#F0EDE6] min-h-screen">
+    <main className="relative min-h-screen bg-[#080808] text-[#F0EDE6]">
       <Navigation />
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center pt-32 px-8 overflow-hidden">
+      <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-8 pt-32">
         <HeroBackground />
+        <div className="relative w-full max-w-[520px] rounded-[18px] border border-[rgba(255,255,255,0.08)] bg-[rgba(15,15,15,0.88)] p-8 backdrop-blur">
+          {loading && <p className="text-[14px] text-[#8A8782]">Loading campaign...</p>}
 
-        <motion.div
-          className="relative max-w-[480px] text-center"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          <AnimatePresence mode="wait">
-            {!hasSignedUp ? (
-              <motion.div
-                key="form"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ type: 'spring', stiffness: 100, damping: 18 }}
-              >
-                <motion.h1
-                  className="instrument-serif text-[64px] text-[#F0EDE6] mb-6 leading-tight"
-                  variants={itemVariants}
+          {!loading && campaign && !success && (
+            <div className="space-y-6">
+              <div>
+                <h1 className="instrument-serif text-[48px] leading-tight">{campaign.title || campaign.name}</h1>
+                <p className="mt-4 text-[16px] leading-relaxed text-[#8A8782]">{campaign.description || 'Join the waitlist and move up by referring friends.'}</p>
+                {referralCodeFromUrl && <p className="mt-3 text-[12px] text-[#C8F135]">Referral applied: {referralCodeFromUrl}</p>}
+              </div>
+
+              <div className="flex gap-3">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSignUp()}
+                  placeholder="Enter your email"
+                  className="flex-1 rounded border border-[rgba(255,255,255,0.1)] bg-[#080808] px-4 py-3 text-[14px] outline-none"
+                />
+                <button
+                  onClick={handleSignUp}
+                  disabled={submitting}
+                  className="rounded bg-[#C8F135] px-4 py-3 text-[13px] font-medium text-[#080808] disabled:opacity-50"
                 >
-                  Acme Launch
-                </motion.h1>
+                  {submitting ? 'Joining...' : 'Join'}
+                </button>
+              </div>
 
-                <motion.p
-                  className="text-[17px] text-[#8A8782] leading-relaxed mb-8"
-                  variants={itemVariants}
-                >
-                  Join the waitlist for the most anticipated product launch of the year. Get early access and exclusive
-                  benefits.
-                </motion.p>
+              {error && <div className="rounded border border-[rgba(232,97,106,0.35)] bg-[rgba(232,97,106,0.08)] px-4 py-3 text-[13px] text-[#E8616A]">{error}</div>}
 
-                <motion.div className="space-y-4 mb-8" variants={itemVariants}>
-                  <div className="flex gap-3">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSignUp()}
-                      placeholder="Enter your email"
-                      className="flex-1 px-4 py-3 bg-[#0F0F0F] border border-[rgba(255,255,255,0.1)] focus:border-[#C8F135] focus:outline-none focus:ring-1 focus:ring-[rgba(200,241,53,0.1)] rounded text-[#F0EDE6] placeholder-[#5C5955] transition-all duration-150"
-                    />
-                    <button
-                      onClick={handleSignUp}
-                      className="dm-mono text-[13px] font-medium text-[#080808] bg-[#C8F135] hover:bg-[#d4f55a] px-[18px] py-3 rounded transition-all duration-150 interactive whitespace-nowrap"
-                    >
-                      Join →
-                    </button>
-                  </div>
-                </motion.div>
-
-                {/* Reward Tiers */}
-                <motion.div className="space-y-3" variants={itemVariants}>
-                  <div className="text-[12px] text-[#5C5955] dm-mono uppercase tracking-wide mb-4">Unlock rewards</div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { tier: 'Top 10', reward: 'Lifetime free' },
-                      { tier: 'Top 50', reward: '6 months free' },
-                      { tier: 'Top 200', reward: '1 month free' },
-                    ].map((item) => (
-                      <div
-                        key={item.tier}
-                        className="bg-[#0F0F0F] border border-[rgba(255,255,255,0.06)] rounded-[12px] p-3"
-                      >
-                        <div className="dm-mono text-[12px] font-medium text-[#C8F135] mb-1">{item.tier}</div>
-                        <div className="text-[12px] text-[#8A8782]">{item.reward}</div>
+              {rewardTiers.length > 0 && (
+                <div>
+                  <div className="mb-3 text-[12px] uppercase tracking-wide text-[#5C5955]">Unlock rewards</div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    {rewardTiers.map((tier) => (
+                      <div key={`${tier.minReferrals}-${tier.rewardLabel}`} className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#080808] p-3">
+                        <div className="dm-mono text-[12px] text-[#C8F135]">{tier.minReferrals} referrals</div>
+                        <div className="mt-1 text-[12px] text-[#8A8782]">{tier.rewardLabel}</div>
                       </div>
                     ))}
                   </div>
-                </motion.div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="success"
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ type: 'spring', stiffness: 100, damping: 18 }}
-                className="space-y-8"
-              >
-                <div>
-                  <p className="text-[18px] text-[#8A8782] mb-4">You&apos;re in!</p>
-                  <motion.div
-                    className="dm-mono font-medium text-[#C8F135]"
-                    style={{ fontSize: 96 }}
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2, type: 'spring', stiffness: 100, damping: 18 }}
-                  >
-                    <CountUpNumber target={mockRank} />
-                  </motion.div>
                 </div>
+              )}
+            </div>
+          )}
 
-                <motion.p className="text-[15px] text-[#8A8782]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}>
-                  Share your link to move up
-                </motion.p>
+          {!loading && campaign && success && (
+            <div className="space-y-6 text-center">
+              <div>
+                <p className="text-[18px] text-[#8A8782]">You're in.</p>
+                <div className="mt-4 dm-mono text-[82px] text-[#C8F135]">{success.rank}</div>
+                <p className="text-[14px] text-[#8A8782]">Share your link to move up the leaderboard.</p>
+              </div>
 
-                <motion.div
-                  className="space-y-3"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  <div className="flex items-center gap-2 bg-[#0F0F0F] border border-[rgba(255,255,255,0.1)] rounded px-3 py-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value="https://waitlyst.app/ref/demo-launch-abc123"
-                      className="flex-1 bg-transparent text-[12px] dm-mono text-[#8A8782] outline-none"
-                    />
-                    <button
-                      onClick={handleCopyReferral}
-                      className="p-1 hover:text-[#C8F135] transition-colors interactive"
-                    >
-                      {copied ? (
-                        <CheckCircle2 className="w-4 h-4 text-[#6FCF97]" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                  {copied && (
-                    <motion.p
-                      className="text-[12px] text-[#6FCF97] dm-mono"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      Copied to clipboard
-                    </motion.p>
-                  )}
-                </motion.div>
+              <div className="flex items-center gap-2 rounded border border-[rgba(255,255,255,0.1)] bg-[#080808] px-3 py-2">
+                <input readOnly value={referralLink} className="flex-1 bg-transparent text-[12px] text-[#8A8782] outline-none" />
+                <button onClick={handleCopyReferral} className="text-[#C8F135]">
+                  {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </button>
+              </div>
 
-                <motion.div
-                  className="bg-[#0F0F0F] border border-[rgba(255,255,255,0.06)] rounded-[12px] p-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                >
-                  <p className="text-[13px] text-[#8A8782]">
-                    <span className="text-[#F0EDE6] font-medium">Your referrals: 0</span>
-                  </p>
-                  <p className="text-[12px] text-[#5C5955] mt-2">Refer 3 friends to unlock 1 month free</p>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
+              <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#080808] p-4 text-left">
+                <p className="text-[13px] text-[#F0EDE6]">Your referral code: {success.referralCode}</p>
+                <p className="mt-2 text-[12px] text-[#5C5955]">Referral count updates on refresh.</p>
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
-      {/* Leaderboard */}
-      <section className="relative py-32 px-8 bg-[#080808]">
-        <div className="max-w-[1140px] mx-auto">
-          <motion.h2
-            className="instrument-serif text-[44px] text-[#F0EDE6] mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            Top Referrers
-          </motion.h2>
-
-          <motion.div
-            className="space-y-2"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ staggerChildren: 0.05 }}
-          >
-            {mockLeaderboardData.map((entry) => (
-              <motion.div
-                key={entry.rank}
-                className={`flex items-center justify-between p-4 bg-[#0F0F0F] border border-[rgba(255,255,255,0.06)] rounded ${
-                  entry.rank === 1 ? 'border-l-2 border-l-[#C8F135]' : ''
-                }`}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ type: 'spring', stiffness: 100, damping: 18 }}
-              >
-                <span className="dm-mono font-medium text-[16px] text-[#5C5955] w-12">#{entry.rank}</span>
-                <span className="text-[13px] text-[#8A8782] flex-1">
-                  {entry.email.replace(/(.{2}).*(@.*)/, '$1***$2')}
-                </span>
-                <span className="dm-mono text-[13px] bg-[rgba(200,241,53,0.08)] text-[#C8F135] px-3 py-1 rounded">
-                  +{entry.referrals}
-                </span>
-              </motion.div>
+      <section className="px-8 pb-24">
+        <div className="mx-auto max-w-[960px]">
+          <h2 className="instrument-serif text-[36px]">Top Referrers</h2>
+          <div className="mt-8 space-y-2">
+            {leaderboard.length === 0 && <p className="text-[14px] text-[#8A8782]">No signups yet.</p>}
+            {leaderboard.map((entry) => (
+              <div key={`${entry.email}-${entry.rank}`} className="flex items-center justify-between rounded border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-4">
+                <span className="dm-mono w-12 text-[#5C5955]">#{entry.rank}</span>
+                <span className="flex-1 text-[13px] text-[#8A8782]">{obfuscateEmail(entry.email)}</span>
+                <span className="dm-mono rounded bg-[rgba(200,241,53,0.08)] px-3 py-1 text-[13px] text-[#C8F135]">+{entry.referral_count || 0}</span>
+              </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
     </main>

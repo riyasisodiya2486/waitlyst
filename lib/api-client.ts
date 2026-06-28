@@ -21,23 +21,26 @@ export async function fetchLeaderboard(campaignId: string) {
 export async function fetchFraud(campaignId: string) {
   const response = await fetch('/api/fraud/analyze', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({ campaign_id: campaignId }),
   })
   if (!response.ok) throw new Error('Failed to fetch fraud data')
-  return response.json()
+  const json = await response.json()
+  return json.results || []
 }
 
-export async function signupToWaitlist(
-  campaignId: string,
-  email: string,
-  referredBy?: string
-) {
-  const response = await fetch('/api/signup', {
+export async function signupToWaitlist(campaignSlug: string, email: string, referralCode?: string) {
+  const response = await fetch('/api/waitlist/signup', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
-      campaign_id: campaignId,
+      campaignSlug,
       email,
-      referred_by: referredBy,
+      referralCode,
     }),
   })
   if (!response.ok) throw new Error('Failed to signup')
@@ -47,6 +50,9 @@ export async function signupToWaitlist(
 export async function suggestRewardTiers(description: string) {
   const response = await fetch('/api/campaigns/suggest-tiers', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({ description }),
   })
   if (!response.ok) throw new Error('Failed to suggest tiers')
@@ -62,6 +68,9 @@ export async function createCheckoutSession(
 ) {
   const response = await fetch('/api/billing/checkout', {
     method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
       founder_id: founderid,
       email,

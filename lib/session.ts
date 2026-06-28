@@ -37,7 +37,7 @@ export async function getSession(): Promise<SessionPayload | null> {
     if (!token) return null
 
     const verified = await jwtVerify(token, secret)
-    return verified.payload as SessionPayload
+    return verified.payload as unknown as SessionPayload
   } catch (error) {
     return null
   }
@@ -47,3 +47,4 @@ export async function destroySession(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.delete('session')
 }
+

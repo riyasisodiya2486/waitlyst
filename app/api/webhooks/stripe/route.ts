@@ -3,11 +3,7 @@ import { getDbClient } from '@/lib/db'
 import Stripe from 'stripe'
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY
-const stripe = stripeSecretKey
-  ? new Stripe(stripeSecretKey, {
-      apiVersion: '2024-12-15.acacia',
-    })
-  : null
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null
 
 export async function POST(request: NextRequest) {
   if (!stripe) {
@@ -37,21 +33,13 @@ export async function POST(request: NextRequest) {
       const checkoutSession = event.data.object as Stripe.Checkout.Session
 
       if (checkoutSession.customer && checkoutSession.subscription) {
-        // Update founder plan to pro
-        await client.query(
-          'UPDATE founders SET plan = $1 WHERE stripe_customer_id = $2',
-          ['pro', checkoutSession.customer as string]
-        )
+        await client.query('UPDATE founders SET plan = $1 WHERE stripe_customer_id = $2', ['pro', checkoutSession.customer as string])
       }
     } else if (event.type === 'customer.subscription.deleted') {
       const subscription = event.data.object as Stripe.Subscription
 
       if (subscription.customer) {
-        // Downgrade founder plan to free
-        await client.query(
-          'UPDATE founders SET plan = $1 WHERE stripe_customer_id = $2',
-          ['free', subscription.customer as string]
-        )
+        await client.query('UPDATE founders SET plan = $1 WHERE stripe_customer_id = $2', ['free', subscription.customer as string])
       }
     }
 

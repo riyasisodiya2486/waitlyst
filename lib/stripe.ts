@@ -4,18 +4,12 @@ let stripeInstance: Stripe | null = null
 
 function getStripe() {
   if (!stripeInstance && process.env.STRIPE_SECRET_KEY) {
-    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2024-12-15',
-    })
+    stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY)
   }
   return stripeInstance
 }
 
-export async function createCheckoutSession(
-  customerId: string,
-  successUrl: string,
-  cancelUrl: string
-) {
+export async function createCheckoutSession(customerId: string, successUrl: string, cancelUrl: string) {
   const stripe = getStripe()
   if (!stripe) throw new Error('Stripe not configured')
 

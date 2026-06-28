@@ -33,21 +33,27 @@ export async function POST(request: NextRequest) {
       const slug = generateSlug(title)
       const now = new Date()
 
-      // Insert campaign
       await client.query(
         'INSERT INTO campaigns (id, founder_id, title, description, slug, status, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
         [campaignId, session.founderId, title, description || '', slug, 'draft', now]
       )
 
-      // Insert reward tiers if provided
       if (Array.isArray(rewardTiers) && rewardTiers.length > 0) {
-        for (let i = 0; i < rewardTiers.length; i++) {
-          const tier = rewardTiers[i]
-          const tierId = uuidv4()
-          await client.query(
-            'INSERT INTO reward_tiers (id, campaign_id, min_referrals, reward_label, tier_order) VALUES ($1, $2, $3, $4, $5)',
-            [tierId, campaignId, tier.minReferrals, tier.rewardLabel, i]
-          )
+        try {
+          for (let i = 0; i < rewardTiers.length; i++) {
+            const tier = rewardTiers[i]
+            if (!tier?.rewardLabel || typeof tier?.minReferrals !== 'number') {
+              continue
+            }
+
+            const tierId = uuidv4()
+            await client.query(
+              'INSERT INTO reward_tiers (id, campaign_id, min_referrals, reward_label, tier_order) VALUES ($1, $2, $3, $4, $5)',
+              [tierId, campaignId, tier.minReferrals, tier.rewardLabel, i]
+            )
+          }
+        } catch (tierError) {
+          console.warn('[v0] Reward tier insert failed, campaign was still created:', tierError)
         }
       }
 
@@ -79,13 +85,41 @@ export async function GET(request: NextRequest) {
 
     try {
       const result = await client.query(
-        'SELECT id, title, slug, description, status, created_at FROM campaigns WHERE founder_id = $1 ORDER BY created_at DESC',
+        `SELECT
+          c.id,
+          c.title,
+          c.slug,
+          c.description,
+          c.status,
+          c.created_at,
+          COUNT(p.id)::int AS signups,
+          COALESCE(SUM(p.referral_count), 0)::int AS total_referrals
+        FROM campaigns c
+        LEFT JOIN participants p ON p.campaign_id = c.id
+        WHERE c.founder_id = $1
+        GROUP BY c.id, c.title, c.slug, c.description, c.status, c.created_at
+        ORDER BY c.created_at DESC`,
         [session.founderId]
       )
 
       await client.end()
 
-      return NextResponse.json(result.rows)
+      return NextResponse.json(
+        result.rows.map((row: any) => ({
+          id: row.id,
+          name: row.title,
+          title: row.title,
+          slug: row.slug,
+          description: row.description,
+          status: row.status,
+          signups: Number(row.signups || 0),
+          referralRate:
+            Number(row.signups || 0) > 0
+              ? Math.round((Number(row.total_referrals || 0) / Number(row.signups)) * 100)
+              : 0,
+          created: row.created_at,
+        }))
+      )
     } catch (dbError) {
       await client.end()
       throw dbError
@@ -95,3 +129,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: 'Failed to fetch campaigns' }, { status: 500 })
   }
 }
+

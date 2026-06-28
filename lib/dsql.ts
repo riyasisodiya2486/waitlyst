@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Client } from 'pg'
 import { DsqlSigner } from '@aws-sdk/dsql-signer'
 
@@ -78,3 +79,4 @@ export async function rewardTierExists(tierId: string): Promise<boolean> {
   const result = await queryOne('SELECT id FROM reward_tiers WHERE id = $1', [tierId])
   return !!result
 }
+

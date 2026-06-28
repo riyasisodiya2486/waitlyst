@@ -4,11 +4,7 @@ import { getDbClient } from '@/lib/db'
 import Stripe from 'stripe'
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY
-const stripe = stripeSecretKey
-  ? new Stripe(stripeSecretKey, {
-      apiVersion: '2024-12-15.acacia',
-    })
-  : null
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,10 +20,7 @@ export async function POST(request: NextRequest) {
     const client = await getDbClient()
 
     try {
-      // Get founder details
-      const founderResult = await client.query('SELECT email, stripe_customer_id FROM founders WHERE id = $1', [
-        session.founderId,
-      ])
+      const founderResult = await client.query('SELECT email, stripe_customer_id FROM founders WHERE id = $1', [session.founderId])
 
       if (founderResult.rows.length === 0) {
         await client.end()
@@ -37,7 +30,6 @@ export async function POST(request: NextRequest) {
       const founder = founderResult.rows[0]
       let customerId = founder.stripe_customer_id
 
-      // Create or retrieve Stripe customer
       if (!customerId) {
         const customer = await stripe.customers.create({
           email: founder.email,
@@ -47,14 +39,9 @@ export async function POST(request: NextRequest) {
         })
         customerId = customer.id
 
-        // Update founder with Stripe customer ID
-        await client.query('UPDATE founders SET stripe_customer_id = $1 WHERE id = $2', [
-          customerId,
-          session.founderId,
-        ])
+        await client.query('UPDATE founders SET stripe_customer_id = $1 WHERE id = $2', [customerId, session.founderId])
       }
 
-      // Create checkout session
       const priceId = process.env.STRIPE_PRICE_ID
       if (!priceId) {
         await client.end()

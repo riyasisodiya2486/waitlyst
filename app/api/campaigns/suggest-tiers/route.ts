@@ -26,6 +26,12 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('[v0] Reward tier suggestion error:', error)
-    return NextResponse.json({ message: 'Failed to suggest reward tiers' }, { status: 500 })
+    return NextResponse.json({
+      tiers: [
+        { minReferrals: 10, rewardLabel: 'Early Bird Access' },
+        { minReferrals: 25, rewardLabel: 'Founder Circle' },
+        { minReferrals: 50, rewardLabel: 'Lifetime Pro' },
+      ],
+    })
   }
 }

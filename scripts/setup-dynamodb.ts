@@ -1,9 +1,9 @@
-import { DynamoDBClient, CreateTableCommand } from '@aws-sdk/client-dynamodb'
+// @ts-nocheck
+import { DynamoDBClient, CreateTableCommand, UpdateTimeToLiveCommand } from '@aws-sdk/client-dynamodb'
 import { STSClient, AssumeRoleWithWebIdentityCommand } from '@aws-sdk/client-sts'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
-// Load .env.development.local
 function loadEnv() {
   try {
     const envPath = resolve(process.cwd(), '.env.development.local')
@@ -27,7 +27,7 @@ async function resolveCredentials() {
     const stsClient = new STSClient({ region: process.env.AWS_REGION || 'us-east-1' })
     const command = new AssumeRoleWithWebIdentityCommand({
       RoleArn: process.env.AWS_ROLE_ARN,
-      RoleSessionName: 'waitlyst-app', // Must match waitlyst-app session name just in case
+      RoleSessionName: 'waitlyst-app',
       WebIdentityToken: process.env.VERCEL_OIDC_TOKEN,
     })
     const response = await stsClient.send(command)
@@ -37,37 +37,50 @@ async function resolveCredentials() {
       sessionToken: response.Credentials?.SessionToken || '',
     }
   }
-  throw new Error('OIDC Credentials missing')
+  if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+    return {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      ...(process.env.AWS_SESSION_TOKEN ? { sessionToken: process.env.AWS_SESSION_TOKEN } : {}),
+    }
+  }
+  throw new Error('AWS credentials missing')
 }
 
 async function setupDynamoDB() {
   const credentials = await resolveCredentials()
   const client = new DynamoDBClient({
     region: process.env.AWS_REGION || 'us-east-1',
-    credentials
+    credentials,
   })
 
   const command = new CreateTableCommand({
     TableName: 'waitlyst-events',
     KeySchema: [
-      { AttributeName: 'PK', KeyType: 'HASH' },
-      { AttributeName: 'SK', KeyType: 'RANGE' },
+      { AttributeName: 'pk', KeyType: 'HASH' },
+      { AttributeName: 'sk', KeyType: 'RANGE' },
     ],
     AttributeDefinitions: [
-      { AttributeName: 'PK', AttributeType: 'S' },
-      { AttributeName: 'SK', AttributeType: 'S' },
+      { AttributeName: 'pk', AttributeType: 'S' },
+      { AttributeName: 'sk', AttributeType: 'S' },
     ],
     BillingMode: 'PAY_PER_REQUEST',
-    TTL: {
-      AttributeName: 'ttl',
-      Enabled: true,
-    },
   })
 
   try {
     console.log('[v0] Creating DynamoDB table: waitlyst-events')
     const result = await client.send(command)
     console.log('[v0] Table created successfully:', result.TableDescription?.TableName)
+    await client.send(
+      new UpdateTimeToLiveCommand({
+        TableName: 'waitlyst-events',
+        TimeToLiveSpecification: {
+          AttributeName: 'ttl',
+          Enabled: true,
+        },
+      })
+    )
+    console.log('[v0] TTL enabled on attribute: ttl')
   } catch (error: any) {
     if (error.name === 'ResourceInUseException') {
       console.log('[v0] Table already exists: waitlyst-events')

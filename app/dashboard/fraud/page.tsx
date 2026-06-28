@@ -1,239 +1,145 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import { DashboardSidebar } from '@/components/dashboard-sidebar'
 import { Navigation } from '@/components/navigation'
-import { mockFraudItems } from '@/lib/mock-data'
-import { fetchFraud, isDemo } from '@/lib/api-client'
-import { AlertTriangle, CheckCircle2, AlertCircle } from 'lucide-react'
+import { fetchCampaigns, fetchFraud } from '@/lib/api-client'
 
-function CircularProgress({ percentage, color }: { percentage: number; color: string }) {
-  const radius = 20
-  const circumference = 2 * Math.PI * radius
-  const offset = circumference - (percentage / 100) * circumference
-
-  return (
-    <svg width="50" height="50" viewBox="0 0 50 50" className="transform -rotate-90">
-      <circle cx="25" cy="25" r={radius} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="2" />
-      <motion.circle
-        cx="25"
-        cy="25"
-        r={radius}
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        initial={{ strokeDashoffset: circumference }}
-        animate={{ strokeDashoffset: offset }}
-        transition={{ duration: 1, ease: 'easeOut' }}
-        strokeLinecap="round"
-      />
-      <text
-        x="25"
-        y="25"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        className="dm-mono text-[12px] font-medium fill-[#F0EDE6]"
-      >
-        {percentage}
-      </text>
-    </svg>
-  )
+type Campaign = {
+  id: string
+  name: string
 }
 
-function TypewriterText({ text }: { text: string }) {
-  const [displayedText, setDisplayedText] = useState('')
-  const [isComplete, setIsComplete] = useState(false)
-
-  React.useEffect(() => {
-    if (isComplete) return
-
-    let index = 0
-    const interval = setInterval(() => {
-      setDisplayedText(text.substring(0, index))
-      index++
-      if (index > text.length) {
-        setIsComplete(true)
-        clearInterval(interval)
-      }
-    }, 15)
-
-    return () => clearInterval(interval)
-  }, [text, isComplete])
-
-  return <span>{displayedText}</span>
-}
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring',
-      stiffness: 100,
-      damping: 18,
-    },
-  },
+type FraudItem = {
+  email: string
+  ip: string
+  referrals: number
+  riskScore: number
+  reason: string
 }
 
 export default function FraudMonitor() {
-  const [expandedIds, setExpandedIds] = useState<string[]>([])
-  const [fraudItems, setFraudItems] = useState(mockFraudItems)
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [campaignId, setCampaignId] = useState('')
+  const [fraudItems, setFraudItems] = useState<FraudItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  async function loadFraud(targetCampaignId?: string) {
+    const activeCampaignId = targetCampaignId || campaignId
+    if (!activeCampaignId) return
+
+    try {
+      setLoading(true)
+      setError('')
+      const results = await fetchFraud(activeCampaignId)
+      setFraudItems(results)
+    } catch (err) {
+      console.error('[v0] Failed to fetch fraud data:', err)
+      setError('Fraud analysis is using fallback data right now.')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    if (!isDemo()) {
-      fetchFraud('demo-campaign')
-        .then(setFraudItems)
-        .catch((err) => {
-          console.error('[v0] Failed to fetch fraud data:', err)
-          setFraudItems(mockFraudItems)
-        })
+    async function init() {
+      try {
+        const campaignList = await fetchCampaigns()
+        setCampaigns(campaignList)
+        if (campaignList[0]?.id) {
+          setCampaignId(campaignList[0].id)
+          await loadFraud(campaignList[0].id)
+        } else {
+          setLoading(false)
+        }
+      } catch (err) {
+        console.error('[v0] Failed to load campaigns for fraud monitor:', err)
+        setError('Could not load campaigns.')
+        setLoading(false)
+      }
     }
-  }, [])
 
-  const toggleExpand = (id: string) => {
-    setExpandedIds((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]))
-  }
+    init()
+  }, [])
 
   const highRiskCount = fraudItems.filter((item) => item.riskScore > 70).length
 
   return (
-    <main className="relative bg-[#080808] text-[#F0EDE6] min-h-screen">
+    <main className="relative min-h-screen bg-[#080808] text-[#F0EDE6]">
       <Navigation />
       <DashboardSidebar />
 
-      {/* Main Content */}
-      <div className="ml-14 pt-20 px-8">
-        <motion.div
-          className="max-w-[1200px]"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          {/* Header */}
-          <motion.h1 className="instrument-serif text-[32px] text-[#F0EDE6] mb-8" variants={itemVariants}>
-            Fraud Monitor
-          </motion.h1>
-
-          {/* Alert Banner */}
-          {highRiskCount > 0 && (
-            <motion.div
-              className="bg-[rgba(232,97,106,0.08)] border border-[rgba(232,97,106,0.2)] rounded-[12px] p-4 mb-8 flex items-center gap-3"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ type: 'spring', stiffness: 100, damping: 18 }}
-            >
-              <AlertTriangle className="w-5 h-5 text-[#E8616A] flex-shrink-0" />
-              <span className="text-[13px] text-[#E8616A]">
-                {highRiskCount} high-risk {highRiskCount === 1 ? 'signup' : 'signups'} detected in the last hour
-              </span>
-            </motion.div>
-          )}
-
-          {/* Risk Distribution */}
-          <motion.div className="grid grid-cols-3 gap-4 mb-12" variants={containerVariants} initial="hidden" animate="visible">
-            {[
-              { label: 'Clean', count: 2800, color: '#6FCF97' },
-              { label: 'Review', count: 47, color: '#E8B339' },
-              { label: 'Flagged', count: 3, color: '#E8616A' },
-            ].map((item) => (
-              <motion.div
-                key={item.label}
-                className="bg-[#0F0F0F] border border-[rgba(255,255,255,0.06)] rounded-[12px] p-6"
-                variants={itemVariants}
+      <div className="ml-14 px-8 pt-20">
+        <div className="mx-auto max-w-[1200px] space-y-8">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="instrument-serif text-[32px]">Fraud Monitor</h1>
+              <p className="mt-2 text-[14px] text-[#8A8782]">Runs Claude when available and falls back cleanly when it is not.</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <select
+                value={campaignId}
+                onChange={(e) => {
+                  const value = e.target.value
+                  setCampaignId(value)
+                  loadFraud(value)
+                }}
+                className="rounded border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] px-3 py-2 text-[13px]"
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="dm-mono text-[12px] uppercase text-[#5C5955] font-medium">{item.label}</span>
-                </div>
-                <div className="dm-mono text-[28px] font-medium text-[#F0EDE6]">{item.count}</div>
-              </motion.div>
-            ))}
-          </motion.div>
-
-          {/* Flagged Participants Table */}
-          <motion.div
-            className="bg-[#0F0F0F] border border-[rgba(255,255,255,0.06)] rounded-[12px] overflow-hidden"
-            variants={itemVariants}
-          >
-            <div className="px-6 py-4 border-b border-[rgba(255,255,255,0.06)]">
-              <h2 className="dm-mono text-[12px] uppercase text-[#5C5955] font-medium tracking-wide">
-                Flagged Participants
-              </h2>
+                {campaigns.map((campaign) => (
+                  <option key={campaign.id} value={campaign.id}>
+                    {campaign.name}
+                  </option>
+                ))}
+              </select>
+              <button onClick={() => loadFraud()} className="rounded bg-[#C8F135] px-4 py-3 text-[13px] font-medium text-[#080808]">
+                Re-run analysis
+              </button>
             </div>
+          </div>
 
+          {highRiskCount > 0 && <div className="rounded border border-[rgba(232,97,106,0.35)] bg-[rgba(232,97,106,0.08)] px-4 py-3 text-[13px] text-[#E8616A]">{highRiskCount} high-risk signups detected.</div>}
+          {error && <div className="rounded border border-[rgba(232,179,57,0.35)] bg-[rgba(232,179,57,0.08)] px-4 py-3 text-[13px] text-[#E8B339]">{error}</div>}
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
+              <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Flagged</div>
+              <div className="mt-2 dm-mono text-[36px] text-[#E8616A]">{fraudItems.filter((item) => item.riskScore > 75).length}</div>
+            </div>
+            <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
+              <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Review</div>
+              <div className="mt-2 dm-mono text-[36px] text-[#E8B339]">{fraudItems.filter((item) => item.riskScore > 50 && item.riskScore <= 75).length}</div>
+            </div>
+            <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
+              <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Results</div>
+              <div className="mt-2 dm-mono text-[36px] text-[#C8F135]">{fraudItems.length}</div>
+            </div>
+          </div>
+
+          <div className="overflow-hidden rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F]">
+            <div className="border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
+              <h2 className="dm-mono text-[12px] uppercase text-[#5C5955]">Analysis Results</h2>
+            </div>
             <div className="divide-y divide-[rgba(255,255,255,0.04)]">
-              {fraudItems.map((item, idx) => {
-                const isExpanded = expandedIds.includes(`fraud-${idx}`)
-                const riskColor =
-                  item.riskScore > 70 ? '#E8616A' : item.riskScore > 50 ? '#E8B339' : '#6FCF97'
-
-                return (
-                  <motion.div key={idx} className="px-6 py-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-4 flex-1">
-                        <span className="text-[13px] text-[#F0EDE6]">{item.email}</span>
-                        <span className="dm-mono text-[12px] text-[#8A8782]">{item.ip}</span>
-                        <span className="dm-mono text-[12px] text-[#8A8782]">+{item.referrals}</span>
-                      </div>
-
-                      <div className="flex items-center gap-4">
-                        <CircularProgress percentage={item.riskScore} color={riskColor} />
-                      </div>
+              {!loading && fraudItems.length === 0 && <div className="px-6 py-6 text-[14px] text-[#8A8782]">No suspicious activity found.</div>}
+              {fraudItems.map((item) => (
+                <div key={`${item.email}-${item.ip}`} className="space-y-3 px-6 py-4 text-[13px]">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="text-[#F0EDE6]">{item.email}</div>
+                      <div className="mt-1 text-[#8A8782]">{item.ip}</div>
                     </div>
-
-                    {/* AI Reasoning */}
-                    <motion.div
-                      className="mb-4 p-3 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.04)] rounded text-[12px] text-[#8A8782]"
-                      initial={false}
-                      animate={{ height: isExpanded ? 'auto' : '24px', overflow: 'hidden' }}
-                    >
-                      {isExpanded ? (
-                        <TypewriterText text={item.reason} />
-                      ) : (
-                        <span className="truncate">{item.reason}</span>
-                      )}
-                    </motion.div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => toggleExpand(`fraud-${idx}`)}
-                        className="text-[12px] text-[#C8F135] hover:text-[#d4f55a] transition-colors"
-                      >
-                        {isExpanded ? 'Hide' : 'Expand'}
-                      </button>
-                      <button className="flex items-center gap-1 text-[12px] px-3 py-1.5 border border-[rgba(111,207,151,0.3)] text-[#6FCF97] hover:bg-[rgba(111,207,151,0.1)] rounded transition-colors">
-                        <CheckCircle2 className="w-3 h-3" />
-                        Approve
-                      </button>
-                      <button className="flex items-center gap-1 text-[12px] px-3 py-1.5 border border-[rgba(232,97,106,0.3)] text-[#E8616A] hover:bg-[rgba(232,97,106,0.1)] rounded transition-colors">
-                        <AlertCircle className="w-3 h-3" />
-                        Quarantine
-                      </button>
-                    </div>
-                  </motion.div>
-                )
-              })}
+                    <div className="dm-mono text-[#C8F135]">Risk {item.riskScore}</div>
+                  </div>
+                  <div className="text-[#8A8782]">{item.reason}</div>
+                  <div className="text-[#5C5955]">Referrals: {item.referrals}</div>
+                </div>
+              ))}
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
     </main>
   )
 }
-
-import React from 'react'
