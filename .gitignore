@@ -19,3 +19,7 @@ tmp-*.log
 tmp-*.err
 .vercel
 .env*
+
+*.log
+*.err
+tmp-*
