@@ -82,18 +82,18 @@ export function WaitlistPageClient({
     <main className="relative min-h-screen bg-[#080808] text-[#F0EDE6]">
       <Navigation />
 
-      <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-8 pt-32">
+      <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 pt-24 sm:px-6 lg:px-8 lg:pt-32">
         <HeroBackground />
-        <div className="relative w-full max-w-[520px] rounded-[18px] border border-[rgba(255,255,255,0.08)] bg-[rgba(15,15,15,0.88)] p-8 backdrop-blur">
+        <div className="relative w-full max-w-[520px] rounded-[18px] border border-[rgba(255,255,255,0.08)] bg-[rgba(15,15,15,0.88)] p-5 backdrop-blur sm:p-8">
           {!success ? (
             <div className="space-y-6">
               <div>
-                <h1 className="instrument-serif text-[48px] leading-tight">{campaign.title || campaign.name}</h1>
-                <p className="mt-4 text-[16px] leading-relaxed text-[#8A8782]">{campaign.description || 'Join the waitlist and move up by referring friends.'}</p>
+                <h1 className="instrument-serif text-[36px] leading-tight sm:text-[48px]">{campaign.title || campaign.name}</h1>
+                <p className="mt-4 text-[15px] leading-relaxed text-[#8A8782] sm:text-[16px]">{campaign.description || 'Join the waitlist and move up by referring friends.'}</p>
                 {referralCodeFromUrl && <p className="mt-3 text-[12px] text-[#C8F135]">Referral applied: {referralCodeFromUrl}</p>}
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <input
                   type="email"
                   value={email}
@@ -112,7 +112,7 @@ export function WaitlistPageClient({
               {rewardTiers.length > 0 && (
                 <div>
                   <div className="mb-3 text-[12px] uppercase tracking-wide text-[#5C5955]">Unlock rewards</div>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
                     {rewardTiers.map((tier) => (
                       <div key={`${tier.minReferrals}-${tier.rewardLabel}`} className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#080808] p-3">
                         <div className="dm-mono text-[12px] text-[#C8F135]">{tier.minReferrals} referrals</div>
@@ -127,19 +127,19 @@ export function WaitlistPageClient({
             <div className="space-y-6 text-center">
               <div>
                 <p className="text-[18px] text-[#8A8782]">You're in.</p>
-                <div className="mt-4 dm-mono text-[82px] text-[#C8F135]">{success.rank}</div>
+                <div className="mt-4 dm-mono text-[60px] text-[#C8F135] sm:text-[82px]">{success.rank}</div>
                 <p className="text-[14px] text-[#8A8782]">Share your link to move up the leaderboard.</p>
               </div>
 
               <div className="flex items-center gap-2 rounded border border-[rgba(255,255,255,0.1)] bg-[#080808] px-3 py-2">
-                <input readOnly value={referralLink} className="flex-1 bg-transparent text-[12px] text-[#8A8782] outline-none" />
+                <input readOnly value={referralLink} className="flex-1 min-w-0 bg-transparent text-[12px] text-[#8A8782] outline-none" />
                 <button onClick={handleCopyReferral} className="text-[#C8F135]">
                   {copied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </button>
               </div>
 
               <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#080808] p-4 text-left">
-                <p className="text-[13px] text-[#F0EDE6]">Your referral code: {success.referralCode}</p>
+                <p className="break-all text-[13px] text-[#F0EDE6]">Your referral code: {success.referralCode}</p>
                 <p className="mt-2 text-[12px] text-[#5C5955]">Referral count updates on refresh.</p>
               </div>
             </div>
@@ -147,16 +147,18 @@ export function WaitlistPageClient({
         </div>
       </section>
 
-      <section className="px-8 pb-24">
+      <section className="px-4 pb-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-[960px]">
-          <h2 className="instrument-serif text-[36px]">Top Referrers</h2>
+          <h2 className="instrument-serif text-[30px] sm:text-[36px]">Top Referrers</h2>
           <div className="mt-8 space-y-2">
             {!leaderboard.length && <p className="text-[14px] text-[#8A8782]">No signups yet.</p>}
             {leaderboard.map((entry) => (
-              <div key={`${entry.email}-${entry.rank}`} className="flex items-center justify-between rounded border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-4">
-                <span className="dm-mono w-12 text-[#5C5955]">#{entry.rank}</span>
-                <span className="flex-1 text-[13px] text-[#8A8782]">{obfuscateEmail(entry.email)}</span>
-                <span className="dm-mono rounded bg-[rgba(200,241,53,0.08)] px-3 py-1 text-[13px] text-[#C8F135]">+{entry.referral_count || 0}</span>
+              <div key={`${entry.email}-${entry.rank}`} className="flex flex-col gap-3 rounded border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                  <span className="dm-mono w-10 text-[#5C5955]">#{entry.rank}</span>
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-[#8A8782]">{obfuscateEmail(entry.email)}</span>
+                </div>
+                <span className="dm-mono self-start rounded bg-[rgba(200,241,53,0.08)] px-3 py-1 text-[13px] text-[#C8F135] sm:self-auto">+{entry.referral_count || 0}</span>
               </div>
             ))}
           </div>

@@ -19,7 +19,7 @@ type FraudItem = {
 
 function FraudMetricSkeleton() {
   return (
-    <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6 animate-pulse">
+    <div className="animate-pulse rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
       <div className="h-3 w-20 rounded bg-[rgba(255,255,255,0.08)]" />
       <div className="mt-4 h-10 w-16 rounded bg-[rgba(255,255,255,0.08)]" />
     </div>
@@ -71,14 +71,14 @@ export function FraudMonitorClient({
       <Navigation />
       <DashboardSidebar />
 
-      <div className="ml-14 px-8 pt-20">
+      <div className="px-4 pb-28 pt-20 md:ml-14 md:px-6 md:pb-8 lg:ml-[200px] lg:px-8">
         <div className="mx-auto max-w-[1200px] space-y-8">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <h1 className="instrument-serif text-[32px]">Fraud Monitor</h1>
-              <p className="mt-2 text-[14px] text-[#8A8782]">Runs Claude when available and falls back cleanly when it is not.</p>
+              <h1 className="instrument-serif text-[28px] sm:text-[32px]">Fraud Monitor</h1>
+              <p className="mt-2 text-[14px] text-[#8A8782]">Runs AI-powered review and falls back cleanly when it is not available.</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <select
                 value={campaignId}
                 onChange={(e) => {
@@ -86,7 +86,7 @@ export function FraudMonitorClient({
                   setCampaignId(value)
                   loadFraud(value)
                 }}
-                className="rounded border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] px-3 py-2 text-[13px]"
+                className="min-w-0 rounded border border-[rgba(255,255,255,0.1)] bg-[#0F0F0F] px-3 py-2 text-[13px]"
               >
                 {campaigns.map((campaign) => (
                   <option key={campaign.id} value={campaign.id}>
@@ -114,29 +114,29 @@ export function FraudMonitorClient({
               <>
                 <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
                   <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Flagged</div>
-                  <div className="mt-2 dm-mono text-[36px] text-[#E8616A]">{fraudItems.filter((item) => item.riskScore > 75).length}</div>
+                  <div className="mt-2 dm-mono text-[32px] text-[#E8616A] sm:text-[36px]">{fraudItems.filter((item) => item.riskScore > 75).length}</div>
                 </div>
                 <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
                   <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Review</div>
-                  <div className="mt-2 dm-mono text-[36px] text-[#E8B339]">{fraudItems.filter((item) => item.riskScore > 50 && item.riskScore <= 75).length}</div>
+                  <div className="mt-2 dm-mono text-[32px] text-[#E8B339] sm:text-[36px]">{fraudItems.filter((item) => item.riskScore > 50 && item.riskScore <= 75).length}</div>
                 </div>
                 <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
                   <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Results</div>
-                  <div className="mt-2 dm-mono text-[36px] text-[#C8F135]">{fraudItems.length}</div>
+                  <div className="mt-2 dm-mono text-[32px] text-[#C8F135] sm:text-[36px]">{fraudItems.length}</div>
                 </div>
               </>
             )}
           </div>
 
           <div className="overflow-hidden rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F]">
-            <div className="border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
+            <div className="border-b border-[rgba(255,255,255,0.06)] px-4 py-4 sm:px-6">
               <h2 className="dm-mono text-[12px] uppercase text-[#5C5955]">Analysis Results</h2>
             </div>
             <div className="divide-y divide-[rgba(255,255,255,0.04)]">
               {loading ? (
                 Array.from({ length: Math.max(fraudItems.length || 0, 2) }).map((_, index) => (
-                  <div key={index} className="space-y-3 px-6 py-4 animate-pulse">
-                    <div className="flex items-center justify-between gap-4">
+                  <div key={index} className="space-y-3 animate-pulse px-4 py-4 sm:px-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                       <div className="space-y-2">
                         <div className="h-4 w-48 rounded bg-[rgba(255,255,255,0.08)]" />
                         <div className="h-4 w-24 rounded bg-[rgba(255,255,255,0.08)]" />
@@ -148,14 +148,14 @@ export function FraudMonitorClient({
                   </div>
                 ))
               ) : !fraudItems.length ? (
-                <div className="px-6 py-6 text-[14px] text-[#8A8782]">No suspicious activity found.</div>
+                <div className="px-4 py-6 text-[14px] text-[#8A8782] sm:px-6">No suspicious activity found.</div>
               ) : (
                 fraudItems.map((item) => (
-                  <div key={`${item.email}-${item.ip}`} className="space-y-3 px-6 py-4 text-[13px]">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <div className="text-[#F0EDE6]">{item.email}</div>
-                        <div className="mt-1 text-[#8A8782]">{item.ip}</div>
+                  <div key={`${item.email}-${item.ip}`} className="space-y-3 px-4 py-4 text-[13px] sm:px-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                      <div className="min-w-0">
+                        <div className="truncate text-[#F0EDE6]">{item.email}</div>
+                        <div className="mt-1 break-all text-[#8A8782]">{item.ip}</div>
                       </div>
                       <div className="dm-mono text-[#C8F135]">Risk {item.riskScore}</div>
                     </div>

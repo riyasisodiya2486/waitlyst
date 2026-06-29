@@ -8,7 +8,7 @@ This project was built for the **H0: Hack the Zero Stack** hackathon using **Ver
 
 ## Demo
 
-- Live app: [ADD LINK HERE]
+- Live app: https://waitlyst-one.vercel.app/
 - Demo video: [ADD LINK HERE]
 
 ## What Waitlyst Does
@@ -230,4 +230,4 @@ scripts/
 
 ## License
 
-Built by [ADD YOUR NAME HERE].
+Built by Riya Sisodiya.

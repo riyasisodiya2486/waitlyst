@@ -55,54 +55,54 @@ export default async function AnalyticsPage() {
         <Navigation />
         <DashboardSidebar />
 
-        <div className="ml-14 px-8 pt-20">
+        <div className="px-4 pb-28 pt-20 md:ml-14 md:px-6 md:pb-8 lg:ml-[200px] lg:px-8">
           <div className="mx-auto max-w-[1200px] space-y-8">
             <div>
-              <h1 className="instrument-serif text-[32px]">Analytics</h1>
+              <h1 className="instrument-serif text-[28px] sm:text-[32px]">Analytics</h1>
               <p className="mt-2 text-[14px] text-[#8A8782]">A simple rollup of real campaign performance from your active database.</p>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
                 <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Total Signups</div>
-                <div className="mt-2 dm-mono text-[36px] text-[#C8F135]">{totalSignups}</div>
+                <div className="mt-2 dm-mono text-[32px] sm:text-[36px] text-[#C8F135]">{totalSignups}</div>
               </div>
               <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
                 <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Campaigns</div>
-                <div className="mt-2 dm-mono text-[36px] text-[#C8F135]">{totalCampaigns}</div>
+                <div className="mt-2 dm-mono text-[32px] sm:text-[36px] text-[#C8F135]">{totalCampaigns}</div>
               </div>
               <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
                 <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Avg Referral Rate</div>
-                <div className="mt-2 dm-mono text-[36px] text-[#C8F135]">{averageReferralRate}</div>
+                <div className="mt-2 dm-mono text-[32px] sm:text-[36px] text-[#C8F135]">{averageReferralRate}</div>
               </div>
             </div>
 
             <div className="overflow-hidden rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F]">
-              <div className="border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
+              <div className="border-b border-[rgba(255,255,255,0.06)] px-4 py-4 sm:px-6">
                 <h2 className="dm-mono text-[12px] uppercase text-[#5C5955]">Per-Campaign Breakdown</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-[rgba(255,255,255,0.06)] text-[12px] uppercase text-[#5C5955]">
-                      <th className="px-6 py-4">Campaign</th>
-                      <th className="px-6 py-4">Signups</th>
-                      <th className="px-6 py-4">Top Referrer</th>
+                      <th className="px-4 py-4 sm:px-6">Campaign</th>
+                      <th className="px-4 py-4 sm:px-6">Signups</th>
+                      <th className="px-4 py-4 sm:px-6">Top Referrer</th>
                     </tr>
                   </thead>
                   <tbody>
                     {!campaigns.length ? (
                       <tr>
-                        <td colSpan={3} className="px-6 py-8 text-[14px] text-[#8A8782]">
+                        <td colSpan={3} className="px-4 py-8 sm:px-6 text-[14px] text-[#8A8782]">
                           No campaigns yet. Create one from the main dashboard to start collecting analytics.
                         </td>
                       </tr>
                     ) : (
                       campaigns.map((campaign) => (
                         <tr key={campaign.id} className="border-b border-[rgba(255,255,255,0.04)] text-[13px] last:border-b-0">
-                          <td className="px-6 py-4 text-[#F0EDE6]">{campaign.title}</td>
-                          <td className="px-6 py-4 dm-mono text-[#F0EDE6]">{campaign.signupCount}</td>
-                          <td className="px-6 py-4 dm-mono text-[#C8F135]">+{campaign.topReferrerCount}</td>
+                          <td className="px-4 py-4 sm:px-6 text-[#F0EDE6]">{campaign.title}</td>
+                          <td className="px-4 py-4 sm:px-6 dm-mono text-[#F0EDE6]">{campaign.signupCount}</td>
+                          <td className="px-4 py-4 sm:px-6 dm-mono text-[#C8F135]">+{campaign.topReferrerCount}</td>
                         </tr>
                       ))
                     )}
@@ -118,4 +118,5 @@ export default async function AnalyticsPage() {
     await client.end()
   }
 }
+
 

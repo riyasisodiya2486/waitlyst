@@ -69,76 +69,39 @@ function PlanCard({
   onUpgrade?: () => void
 }) {
   return (
-    <motion.div
-      className={`relative bg-[#0F0F0F] rounded-[12px] p-8 ${
-        isPro
-          ? 'border-2 border-[#C8F135]'
-          : 'border border-[rgba(255,255,255,0.06)]'
-      }`}
-      variants={itemVariants}
-    >
+    <motion.div className={`relative rounded-[12px] bg-[#0F0F0F] p-6 sm:p-8 ${isPro ? 'border-2 border-[#C8F135]' : 'border border-[rgba(255,255,255,0.06)]'}`} variants={itemVariants}>
       {isPro && (
-        <motion.div
-          className="absolute top-4 right-4 bg-[rgba(200,241,53,0.15)] border border-[rgba(200,241,53,0.3)] px-3 py-1 rounded"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-        >
-          <span className="dm-mono text-[11px] uppercase text-[#C8F135] font-medium">Most popular</span>
+        <motion.div className="absolute right-4 top-4 rounded border border-[rgba(200,241,53,0.3)] bg-[rgba(200,241,53,0.15)] px-3 py-1" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
+          <span className="dm-mono text-[11px] font-medium uppercase text-[#C8F135]">Most popular</span>
         </motion.div>
       )}
 
       {isCurrent && !isPro && (
-        <motion.div
-          className="absolute top-4 right-4 bg-[rgba(111,207,151,0.15)] border border-[rgba(111,207,151,0.3)] px-3 py-1 rounded"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-        >
-          <span className="dm-mono text-[11px] uppercase text-[#6FCF97] font-medium">Current plan</span>
+        <motion.div className="absolute right-4 top-4 rounded border border-[rgba(111,207,151,0.3)] bg-[rgba(111,207,151,0.15)] px-3 py-1" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}>
+          <span className="dm-mono text-[11px] font-medium uppercase text-[#6FCF97]">Current plan</span>
         </motion.div>
       )}
 
-      <h3 className="dm-mono text-[16px] font-medium text-[#F0EDE6] mb-2">{name}</h3>
+      <h3 className="dm-mono mb-2 text-[16px] font-medium text-[#F0EDE6]">{name}</h3>
 
       <div className="mb-8">
-        <span className="dm-mono text-[36px] font-medium text-[#F0EDE6]">{price}</span>
+        <span className="dm-mono text-[32px] font-medium text-[#F0EDE6] sm:text-[36px]">{price}</span>
         {price !== 'Free' && <span className="text-[13px] text-[#8A8782]">/month</span>}
       </div>
 
       <button
         onClick={isPro && !isCurrent ? onUpgrade : undefined}
         disabled={isCurrent || isLoading}
-        className={`w-full py-3 rounded font-medium text-[13px] mb-8 transition-all duration-200 dm-mono ${
-          isCurrent
-            ? 'bg-[rgba(200,241,53,0.1)] border border-[#C8F135] text-[#C8F135]'
-            : isPro
-              ? 'bg-[#C8F135] text-[#080808] hover:bg-[#d4f55a] disabled:opacity-50'
-              : 'bg-[rgba(255,255,255,0.06)] text-[#F0EDE6] hover:bg-[rgba(255,255,255,0.1)]'
-        }`}
+        className={`dm-mono mb-8 w-full rounded py-3 text-[13px] font-medium transition-all duration-200 ${isCurrent ? 'border border-[#C8F135] bg-[rgba(200,241,53,0.1)] text-[#C8F135]' : isPro ? 'bg-[#C8F135] text-[#080808] hover:bg-[#d4f55a] disabled:opacity-50' : 'bg-[rgba(255,255,255,0.06)] text-[#F0EDE6] hover:bg-[rgba(255,255,255,0.1)]'}`}
       >
         {isLoading ? 'Processing...' : isCurrent ? 'Current Plan' : isPro ? 'Upgrade to Pro' : 'Downgrade'}
       </button>
 
       <div className="space-y-3">
         {featureList.map((feature, idx) => (
-          <motion.div
-            key={idx}
-            className="flex items-center gap-3"
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: idx * 0.05 + 0.2 }}
-          >
-            {feature.included ? (
-              <CheckCircle2 className="w-5 h-5 text-[#6FCF97] flex-shrink-0" />
-            ) : (
-              <Circle className="w-5 h-5 text-[#5C5955] flex-shrink-0" />
-            )}
-            <span
-              className={`text-[13px] ${
-                feature.included ? 'text-[#F0EDE6]' : 'text-[#5C5955]'
-              }`}
-            >
-              {feature.text}
-            </span>
+          <motion.div key={idx} className="flex items-center gap-3" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 + 0.2 }}>
+            {feature.included ? <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-[#6FCF97]" /> : <Circle className="h-5 w-5 flex-shrink-0 text-[#5C5955]" />}
+            <span className={`text-[13px] ${feature.included ? 'text-[#F0EDE6]' : 'text-[#5C5955]'}`}>{feature.text}</span>
           </motion.div>
         ))}
       </div>
@@ -157,13 +120,7 @@ export default function Billing() {
         return
       }
 
-      const response = await createCheckoutSession(
-        'founder-id',
-        'user@example.com',
-        'User Name',
-        `${window.location.origin}/dashboard/billing?success=true`,
-        window.location.href
-      )
+      const response = await createCheckoutSession('founder-id', 'user@example.com', 'User Name', `${window.location.origin}/dashboard/billing?success=true`, window.location.href)
 
       if (response.url) {
         window.location.href = response.url
@@ -175,78 +132,39 @@ export default function Billing() {
       setIsLoading(false)
     }
   }
+
   return (
-    <main className="relative bg-[#080808] text-[#F0EDE6] min-h-screen">
+    <main className="relative min-h-screen bg-[#080808] text-[#F0EDE6]">
       <Navigation />
       <DashboardSidebar />
 
-      {/* Main Content */}
-      <div className="ml-14 pt-20 px-8">
-        <motion.div
-          className="max-w-[1200px]"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          {/* Header */}
-          <motion.h1 className="instrument-serif text-[32px] text-[#F0EDE6] mb-12" variants={itemVariants}>
+      <div className="px-4 pb-28 pt-20 md:ml-14 md:px-6 md:pb-8 lg:ml-[200px] lg:px-8">
+        <motion.div className="mx-auto max-w-[1200px]" variants={containerVariants} initial="hidden" animate="visible">
+          <motion.h1 className="instrument-serif mb-12 text-[28px] text-[#F0EDE6] sm:text-[32px]" variants={itemVariants}>
             Billing
           </motion.h1>
 
-          {/* Plans Grid */}
-          <motion.div
-            className="grid grid-cols-2 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <PlanCard
-              name="Free"
-              price="Free"
-              features={features.free}
-              isCurrent={true}
-              isLoading={isLoading}
-            />
-            <PlanCard
-              name="Pro"
-              price="$29"
-              features={features.pro}
-              isPro={true}
-              isLoading={isLoading}
-              onUpgrade={handleCheckout}
-            />
+          <motion.div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:gap-8" variants={containerVariants} initial="hidden" animate="visible">
+            <PlanCard name="Free" price="Free" features={features.free} isCurrent={true} isLoading={isLoading} />
+            <PlanCard name="Pro" price="$29" features={features.pro} isPro={true} isLoading={isLoading} onUpgrade={handleCheckout} />
           </motion.div>
 
-          {/* Billing History */}
-          <motion.div
-            className="mt-16 bg-[#0F0F0F] border border-[rgba(255,255,255,0.06)] rounded-[12px] p-8"
-            variants={itemVariants}
-          >
-            <h2 className="dm-mono text-[12px] uppercase text-[#5C5955] font-medium tracking-wide mb-6">
-              Billing History
-            </h2>
+          <motion.div className="mt-12 rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6 sm:mt-16 sm:p-8" variants={itemVariants}>
+            <h2 className="dm-mono mb-6 text-[12px] font-medium uppercase tracking-wide text-[#5C5955]">Billing History</h2>
 
             <div className="space-y-4">
               {[
                 { date: '2024-02-01', amount: '$0.00', status: 'Free Plan' },
                 { date: '2024-01-01', amount: '$0.00', status: 'Free Plan' },
               ].map((invoice, idx) => (
-                <motion.div
-                  key={idx}
-                  className="flex items-center justify-between py-4 border-b border-[rgba(255,255,255,0.04)] last:border-b-0"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: idx * 0.1 }}
-                >
+                <motion.div key={idx} className="flex flex-col gap-3 border-b border-[rgba(255,255,255,0.04)] py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.1 }}>
                   <div>
                     <p className="text-[13px] text-[#F0EDE6]">{invoice.date}</p>
                     <p className="text-[12px] text-[#8A8782]">{invoice.status}</p>
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="dm-mono text-[13px] text-[#F0EDE6]">{invoice.amount}</span>
-                    <button className="text-[12px] text-[#C8F135] hover:text-[#d4f55a] transition-colors">
-                      Download
-                    </button>
+                    <button className="text-[12px] text-[#C8F135] transition-colors hover:text-[#d4f55a]">Download</button>
                   </div>
                 </motion.div>
               ))}
@@ -257,4 +175,3 @@ export default function Billing() {
     </main>
   )
 }
-

@@ -49,18 +49,18 @@ export default async function SettingsPage() {
         <Navigation />
         <DashboardSidebar />
 
-        <div className="ml-14 px-8 pt-20">
+        <div className="px-4 pb-28 pt-20 md:ml-14 md:px-6 md:pb-8 lg:ml-[200px] lg:px-8">
           <div className="mx-auto max-w-[1200px] space-y-8">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h1 className="instrument-serif text-[32px]">Settings</h1>
+                <h1 className="instrument-serif text-[28px] sm:text-[32px]">Settings</h1>
                 <p className="mt-2 text-[14px] text-[#8A8782]">Your current founder account details and plan status.</p>
               </div>
               <SignOutButton />
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-8">
+              <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6 sm:p-8">
                 <h2 className="dm-mono text-[12px] uppercase text-[#5C5955] font-medium tracking-wide">Founder Profile</h2>
                 <div className="mt-6 space-y-6">
                   <div>
@@ -74,7 +74,7 @@ export default async function SettingsPage() {
                 </div>
               </div>
 
-              <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-8">
+              <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6 sm:p-8">
                 <h2 className="dm-mono text-[12px] uppercase text-[#5C5955] font-medium tracking-wide">Plan</h2>
                 <div className="mt-6 space-y-4">
                   <PlanBadge plan={founder.plan || 'free'} />
@@ -94,4 +94,5 @@ export default async function SettingsPage() {
     await client.end()
   }
 }
+
 
