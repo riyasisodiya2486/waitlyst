@@ -1,6 +1,5 @@
 // @ts-nocheck
-import { DynamoDBClient, CreateTableCommand, UpdateTimeToLiveCommand } from '@aws-sdk/client-dynamodb'
-import { STSClient, AssumeRoleWithWebIdentityCommand } from '@aws-sdk/client-sts'
+import { DynamoDBClient, CreateTableCommand, DescribeTableCommand, UpdateTimeToLiveCommand } from '@aws-sdk/client-dynamodb'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
@@ -22,40 +21,29 @@ function loadEnv() {
 }
 loadEnv()
 
-async function resolveCredentials() {
-  if (process.env.VERCEL_OIDC_TOKEN && process.env.AWS_ROLE_ARN) {
-    const stsClient = new STSClient({ region: process.env.AWS_REGION || 'us-east-1' })
-    const command = new AssumeRoleWithWebIdentityCommand({
-      RoleArn: process.env.AWS_ROLE_ARN,
-      RoleSessionName: 'waitlyst-app',
-      WebIdentityToken: process.env.VERCEL_OIDC_TOKEN,
-    })
-    const response = await stsClient.send(command)
-    return {
-      accessKeyId: response.Credentials?.AccessKeyId || '',
-      secretAccessKey: response.Credentials?.SecretAccessKey || '',
-      sessionToken: response.Credentials?.SessionToken || '',
-    }
+async function waitForTableActive(client: DynamoDBClient, tableName: string) {
+  for (let attempt = 0; attempt < 15; attempt++) {
+    const result = await client.send(new DescribeTableCommand({ TableName: tableName }))
+    const status = result.Table?.TableStatus
+    console.log(`[v0] Table status check ${attempt + 1}: ${status}`)
+    if (status === 'ACTIVE') return
+    await new Promise((resolve) => setTimeout(resolve, 2000))
   }
-  if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-    return {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      ...(process.env.AWS_SESSION_TOKEN ? { sessionToken: process.env.AWS_SESSION_TOKEN } : {}),
-    }
-  }
-  throw new Error('AWS credentials missing')
+  throw new Error(`Timed out waiting for table ${tableName} to become ACTIVE`)
 }
 
 async function setupDynamoDB() {
-  const credentials = await resolveCredentials()
+  const tableName = 'waitlyst-events'
   const client = new DynamoDBClient({
-    region: process.env.AWS_REGION || 'us-east-1',
-    credentials,
+    region: process.env.DYNAMO_AWS_REGION || 'us-east-1',
+    credentials: {
+      accessKeyId: process.env.DYNAMO_AWS_ACCESS_KEY_ID || '',
+      secretAccessKey: process.env.DYNAMO_AWS_SECRET_ACCESS_KEY || '',
+    },
   })
 
   const command = new CreateTableCommand({
-    TableName: 'waitlyst-events',
+    TableName: tableName,
     KeySchema: [
       { AttributeName: 'pk', KeyType: 'HASH' },
       { AttributeName: 'sk', KeyType: 'RANGE' },
@@ -68,12 +56,13 @@ async function setupDynamoDB() {
   })
 
   try {
-    console.log('[v0] Creating DynamoDB table: waitlyst-events')
+    console.log(`[v0] Creating DynamoDB table: ${tableName}`)
     const result = await client.send(command)
     console.log('[v0] Table created successfully:', result.TableDescription?.TableName)
+    await waitForTableActive(client, tableName)
     await client.send(
       new UpdateTimeToLiveCommand({
-        TableName: 'waitlyst-events',
+        TableName: tableName,
         TimeToLiveSpecification: {
           AttributeName: 'ttl',
           Enabled: true,
@@ -83,7 +72,7 @@ async function setupDynamoDB() {
     console.log('[v0] TTL enabled on attribute: ttl')
   } catch (error: any) {
     if (error.name === 'ResourceInUseException') {
-      console.log('[v0] Table already exists: waitlyst-events')
+      console.log(`[v0] Table already exists: ${tableName}`)
     } else {
       console.error('[v0] Failed to create table:', error.message)
       throw error

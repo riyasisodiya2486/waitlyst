@@ -6,3 +6,5 @@ minimumReleaseAgeExclude:
   - '@aws-sdk/client-dynamodb@3.1070.0'
   - '@aws-sdk/dsql-signer@3.1070.0'
   - '@aws-sdk/lib-dynamodb@3.1070.0'
+overrides:
+  hono: 4.12.25

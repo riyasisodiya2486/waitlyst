@@ -1,0 +1,58 @@
+[
+  {
+    "pk": "campaign#7ede27ae-f2a4-44f4-8709-deba18d50f52",
+    "sk": "signup#1782665495332#d0aea6e9-6311-4137-a9bc-bbe6d0c3675f",
+    "type": "signup",
+    "campaign_id": "7ede27ae-f2a4-44f4-8709-deba18d50f52",
+    "email": "marry@gmail.com",
+    "ip_address": "::1",
+    "timestamp": 1782665495332,
+    "ttl": 1785257495
+  },
+  {
+    "pk": "campaign#7ede27ae-f2a4-44f4-8709-deba18d50f52",
+    "sk": "referral#1782665545250#36540cf2-4abf-4bb4-98a8-e7be5595dd1a",
+    "type": "referral",
+    "campaign_id": "7ede27ae-f2a4-44f4-8709-deba18d50f52",
+    "email": "oscar@gmail.com",
+    "referral_code": "nakGGxvq",
+    "ip_address": "::1",
+    "referred_by": "nakGGxvq",
+    "timestamp": 1782665545250,
+    "ttl": 1785257545
+  },
+  {
+    "pk": "campaign#7ede27ae-f2a4-44f4-8709-deba18d50f52",
+    "sk": "referral#1782665575206#140fdd29-7446-4ca6-bca1-f4bb2b4ecad7",
+    "type": "referral",
+    "campaign_id": "7ede27ae-f2a4-44f4-8709-deba18d50f52",
+    "email": "smoke@gmail.com",
+    "referral_code": "nakGGxvq",
+    "ip_address": "::1",
+    "referred_by": "nakGGxvq",
+    "timestamp": 1782665575206,
+    "ttl": 1785257575
+  },
+  {
+    "pk": "campaign#f54bcf1b-e030-4066-944f-20abb44e9faf",
+    "sk": "signup#1782666922710#c3dc1828-1fb6-46ec-a362-6370da6d680a",
+    "type": "signup",
+    "campaign_id": "f54bcf1b-e030-4066-944f-20abb44e9faf",
+    "email": "public.1782666916124@example.com",
+    "referral_code": "nrWIighv",
+    "ip_address": "::1",
+    "timestamp": 1782666922710,
+    "ttl": 1785258922
+  },
+  {
+    "pk": "campaign#9eb7ae7e-022e-4d46-b115-81230c26606c",
+    "sk": "signup#1782667235219#6ff382dc-882d-4a57-81b6-7a1e3eed774e",
+    "type": "signup",
+    "campaign_id": "9eb7ae7e-022e-4d46-b115-81230c26606c",
+    "email": "join.1782667231542@example.com",
+    "referral_code": "9aSieak3",
+    "ip_address": "::1",
+    "timestamp": 1782667235219,
+    "ttl": 1785259235
+  }
+]

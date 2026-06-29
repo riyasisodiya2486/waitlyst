@@ -58,7 +58,7 @@ export function WaitlistPageClient({
     try {
       setSubmitting(true)
       setError('')
-      const response = await signupToWaitlist(campaign.slug, email.trim(), referralCodeFromUrl)
+      const response = await signupToWaitlist(campaign.id, email.trim(), referralCodeFromUrl)
       setSuccess(response)
       await refreshLeaderboard()
     } catch (err) {

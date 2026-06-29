@@ -1,49 +1,119 @@
-// @ts-nocheck
-'use client'
-
-import { motion } from 'framer-motion'
-import { DashboardSidebar } from '@/components/dashboard-sidebar'
+import { getSession } from '@/lib/session'
+import { getDbClient } from '@/lib/db'
 import { Navigation } from '@/components/navigation'
+import { DashboardSidebar } from '@/components/dashboard-sidebar'
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring',
-      stiffness: 100,
-      damping: 18,
-    },
-  },
+export default async function AnalyticsPage() {
+  const session = await getSession()
+  const client = await getDbClient()
+
+  try {
+    const summaryResult = await client.query(
+      `SELECT
+        COUNT(DISTINCT c.id)::int AS total_campaigns,
+        COUNT(p.id)::int AS total_signups,
+        COALESCE(AVG(p.referral_count), 0)::float AS average_referral_rate
+       FROM campaigns c
+       LEFT JOIN participants p ON p.campaign_id = c.id
+       WHERE c.founder_id = $1`,
+      [session?.founderId],
+    )
+
+    const campaignsResult = await client.query(
+      `SELECT
+        c.id,
+        c.title,
+        COUNT(p.id)::int AS signup_count,
+        COALESCE(MAX(p.referral_count), 0)::int AS top_referrer_count
+       FROM campaigns c
+       LEFT JOIN participants p ON p.campaign_id = c.id
+       WHERE c.founder_id = $1
+       GROUP BY c.id, c.title, c.created_at
+       ORDER BY c.created_at DESC`,
+      [session?.founderId],
+    )
+
+    const summary = summaryResult.rows[0] || {
+      total_campaigns: 0,
+      total_signups: 0,
+      average_referral_rate: 0,
+    }
+
+    const totalCampaigns = Number(summary.total_campaigns || 0)
+    const totalSignups = Number(summary.total_signups || 0)
+    const averageReferralRate = Math.round(Number(summary.average_referral_rate || 0) * 10) / 10
+    const campaigns = campaignsResult.rows.map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      signupCount: Number(row.signup_count || 0),
+      topReferrerCount: Number(row.top_referrer_count || 0),
+    }))
+
+    return (
+      <main className="relative min-h-screen bg-[#080808] text-[#F0EDE6]">
+        <Navigation />
+        <DashboardSidebar />
+
+        <div className="ml-14 px-8 pt-20">
+          <div className="mx-auto max-w-[1200px] space-y-8">
+            <div>
+              <h1 className="instrument-serif text-[32px]">Analytics</h1>
+              <p className="mt-2 text-[14px] text-[#8A8782]">A simple rollup of real campaign performance from your active database.</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
+                <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Total Signups</div>
+                <div className="mt-2 dm-mono text-[36px] text-[#C8F135]">{totalSignups}</div>
+              </div>
+              <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
+                <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Campaigns</div>
+                <div className="mt-2 dm-mono text-[36px] text-[#C8F135]">{totalCampaigns}</div>
+              </div>
+              <div className="rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
+                <div className="dm-mono text-[12px] uppercase text-[#5C5955]">Avg Referral Rate</div>
+                <div className="mt-2 dm-mono text-[36px] text-[#C8F135]">{averageReferralRate}</div>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F]">
+              <div className="border-b border-[rgba(255,255,255,0.06)] px-6 py-4">
+                <h2 className="dm-mono text-[12px] uppercase text-[#5C5955]">Per-Campaign Breakdown</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-[rgba(255,255,255,0.06)] text-[12px] uppercase text-[#5C5955]">
+                      <th className="px-6 py-4">Campaign</th>
+                      <th className="px-6 py-4">Signups</th>
+                      <th className="px-6 py-4">Top Referrer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {!campaigns.length ? (
+                      <tr>
+                        <td colSpan={3} className="px-6 py-8 text-[14px] text-[#8A8782]">
+                          No campaigns yet. Create one from the main dashboard to start collecting analytics.
+                        </td>
+                      </tr>
+                    ) : (
+                      campaigns.map((campaign) => (
+                        <tr key={campaign.id} className="border-b border-[rgba(255,255,255,0.04)] text-[13px] last:border-b-0">
+                          <td className="px-6 py-4 text-[#F0EDE6]">{campaign.title}</td>
+                          <td className="px-6 py-4 dm-mono text-[#F0EDE6]">{campaign.signupCount}</td>
+                          <td className="px-6 py-4 dm-mono text-[#C8F135]">+{campaign.topReferrerCount}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    )
+  } finally {
+    await client.end()
+  }
 }
-
-export default function Analytics() {
-  return (
-    <main className="relative bg-[#080808] text-[#F0EDE6] min-h-screen">
-      <Navigation />
-      <DashboardSidebar />
-
-      <div className="ml-14 pt-20 px-8">
-        <motion.div
-          className="max-w-[1200px]"
-          initial="hidden"
-          animate="visible"
-          variants={{ visible: { transition: { staggerChildren: 0.08 } } }}
-        >
-          <motion.h1 className="instrument-serif text-[32px] text-[#F0EDE6] mb-8" variants={itemVariants}>
-            Analytics
-          </motion.h1>
-
-          <motion.div
-            className="bg-[#0F0F0F] border border-[rgba(255,255,255,0.06)] rounded-[12px] p-12 text-center"
-            variants={itemVariants}
-          >
-            <p className="text-[15px] text-[#8A8782]">Detailed analytics dashboard coming soon</p>
-          </motion.div>
-        </motion.div>
-      </div>
-    </main>
-  )
-}
-

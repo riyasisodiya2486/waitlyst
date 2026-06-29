@@ -31,16 +31,16 @@ export async function fetchFraud(campaignId: string) {
   return json.results || []
 }
 
-export async function signupToWaitlist(campaignSlug: string, email: string, referralCode?: string) {
-  const response = await fetch('/api/waitlist/signup', {
+export async function signupToWaitlist(campaignId: string, email: string, referralCode?: string) {
+  const response = await fetch('/api/signup', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      campaignSlug,
+      campaign_id: campaignId,
       email,
-      referralCode,
+      referred_by: referralCode,
     }),
   })
   if (!response.ok) throw new Error('Failed to signup')
