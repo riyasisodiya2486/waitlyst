@@ -48,6 +48,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: 'STRIPE_PRICE_ID not configured' }, { status: 500 })
       }
 
+      const appOrigin = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
+
       const checkoutSession = await stripe.checkout.sessions.create({
         customer: customerId,
         line_items: [
@@ -57,8 +59,8 @@ export async function POST(request: NextRequest) {
           },
         ],
         mode: 'subscription',
-        success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?upgrade=success`,
-        cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/billing`,
+        success_url: `${appOrigin}/dashboard?upgrade=success`,
+        cancel_url: `${appOrigin}/dashboard/billing`,
       })
 
       await client.end()
