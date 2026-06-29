@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { getDbClient } from '@/lib/db'
 import { CampaignDetailClient } from '@/components/campaign-detail-client'
@@ -51,3 +52,4 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
     await client.end()
   }
 }
+

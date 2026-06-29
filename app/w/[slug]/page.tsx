@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { notFound } from 'next/navigation'
 import { getDbClient } from '@/lib/db'
 import { WaitlistPageClient } from '@/components/waitlist-page-client'
@@ -65,3 +66,4 @@ export default async function WaitlistPage({
     await client.end()
   }
 }
+

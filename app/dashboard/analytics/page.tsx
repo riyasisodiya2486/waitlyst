@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { getSession } from '@/lib/session'
 import { getDbClient } from '@/lib/db'
 import { Navigation } from '@/components/navigation'
@@ -117,3 +118,4 @@ export default async function AnalyticsPage() {
     await client.end()
   }
 }
+

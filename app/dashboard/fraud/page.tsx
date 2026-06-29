@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { getSession } from '@/lib/session'
 import { getDbClient } from '@/lib/db'
 import { FraudMonitorClient } from '@/components/fraud-monitor-client'
@@ -39,3 +40,4 @@ export default async function FraudMonitorPage() {
     await client.end()
   }
 }
+

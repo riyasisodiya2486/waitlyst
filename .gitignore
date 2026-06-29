@@ -17,9 +17,10 @@ node_modules
 tsconfig.tsbuildinfo
 tmp-*.log
 tmp-*.err
+.next-build/
 .vercel
 .env*
-
+waitlyst-events.json
 *.log
 *.err
 tmp-*

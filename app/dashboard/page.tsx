@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { getSession } from '@/lib/session'
 import { getDbClient } from '@/lib/db'
 import { DashboardPageClient } from '@/components/dashboard-page-client'
@@ -42,3 +43,4 @@ export default async function DashboardPage() {
     await client.end()
   }
 }
+

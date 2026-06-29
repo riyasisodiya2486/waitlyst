@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { getSession } from '@/lib/session'
@@ -45,3 +46,4 @@ export default async function RootLayout({
     </html>
   )
 }
+
