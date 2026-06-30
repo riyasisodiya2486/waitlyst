@@ -8,6 +8,18 @@ function getAwsRegion() {
 }
 
 async function resolveCredentials() {
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID || process.env.DSQL_AWS_ACCESS_KEY_ID || ''
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || process.env.DSQL_AWS_SECRET_ACCESS_KEY || ''
+  const sessionToken = process.env.AWS_SESSION_TOKEN || process.env.DSQL_AWS_SESSION_TOKEN
+
+  if (accessKeyId && secretAccessKey) {
+    return {
+      accessKeyId,
+      secretAccessKey,
+      ...(sessionToken ? { sessionToken } : {}),
+    }
+  }
+
   if (process.env.VERCEL_OIDC_TOKEN && process.env.AWS_ROLE_ARN) {
     const stsClient = new STSClient({ region: getAwsRegion() })
     const command = new AssumeRoleWithWebIdentityCommand({
@@ -23,21 +35,9 @@ async function resolveCredentials() {
     }
   }
 
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID || process.env.DSQL_AWS_ACCESS_KEY_ID || ''
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || process.env.DSQL_AWS_SECRET_ACCESS_KEY || ''
-  const sessionToken = process.env.AWS_SESSION_TOKEN || process.env.DSQL_AWS_SESSION_TOKEN
-
-  if (!accessKeyId || !secretAccessKey) {
-    throw new Error(
-      'No Aurora DSQL credentials available (need VERCEL_OIDC_TOKEN+AWS_ROLE_ARN or AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY or DSQL_AWS_ACCESS_KEY_ID/DSQL_AWS_SECRET_ACCESS_KEY)',
-    )
-  }
-
-  return {
-    accessKeyId,
-    secretAccessKey,
-    ...(sessionToken ? { sessionToken } : {}),
-  }
+  throw new Error(
+    'No Aurora DSQL credentials available (need AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY or DSQL_AWS_ACCESS_KEY_ID/DSQL_AWS_SECRET_ACCESS_KEY; OIDC remains optional via VERCEL_OIDC_TOKEN+AWS_ROLE_ARN)',
+  )
 }
 
 // hostname is required at constructor time in @aws-sdk/dsql-signer v3.x

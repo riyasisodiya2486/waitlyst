@@ -22,24 +22,50 @@ function loadEnv() {
   }
 }
 
-async function getDirectDsqlClient() {
-  const sts = new STSClient({ region: process.env.AWS_REGION || 'us-east-1' })
-  const assumed = await sts.send(
-    new AssumeRoleWithWebIdentityCommand({
-      RoleArn: process.env.AWS_ROLE_ARN,
-      RoleSessionName: 'waitlyst-seed-demo',
-      WebIdentityToken: process.env.VERCEL_OIDC_TOKEN,
-    })
-  )
+function getAwsRegion() {
+  return process.env.AWS_REGION || process.env.DSQL_AWS_REGION || 'us-east-1'
+}
 
-  const signer = new DsqlSigner({
-    hostname: process.env.PGHOST || '',
-    region: process.env.AWS_REGION || 'us-east-1',
-    credentials: {
+async function resolveCredentials() {
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID || process.env.DSQL_AWS_ACCESS_KEY_ID || ''
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || process.env.DSQL_AWS_SECRET_ACCESS_KEY || ''
+  const sessionToken = process.env.AWS_SESSION_TOKEN || process.env.DSQL_AWS_SESSION_TOKEN
+
+  if (accessKeyId && secretAccessKey) {
+    return {
+      accessKeyId,
+      secretAccessKey,
+      ...(sessionToken ? { sessionToken } : {}),
+    }
+  }
+
+  if (process.env.VERCEL_OIDC_TOKEN && process.env.AWS_ROLE_ARN) {
+    const sts = new STSClient({ region: getAwsRegion() })
+    const assumed = await sts.send(
+      new AssumeRoleWithWebIdentityCommand({
+        RoleArn: process.env.AWS_ROLE_ARN,
+        RoleSessionName: 'waitlyst-seed-demo',
+        WebIdentityToken: process.env.VERCEL_OIDC_TOKEN,
+      })
+    )
+
+    return {
       accessKeyId: assumed.Credentials?.AccessKeyId || '',
       secretAccessKey: assumed.Credentials?.SecretAccessKey || '',
       sessionToken: assumed.Credentials?.SessionToken || '',
-    },
+    }
+  }
+
+  throw new Error(
+    'No Aurora DSQL credentials available for seeding (need AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY or DSQL_AWS_ACCESS_KEY_ID/DSQL_AWS_SECRET_ACCESS_KEY; OIDC remains optional via VERCEL_OIDC_TOKEN+AWS_ROLE_ARN)',
+  )
+}
+
+async function getDirectDsqlClient() {
+  const signer = new DsqlSigner({
+    hostname: process.env.PGHOST || '',
+    region: getAwsRegion(),
+    credentials: await resolveCredentials(),
   })
 
   const client = new Client({
