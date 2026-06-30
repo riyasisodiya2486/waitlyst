@@ -30,7 +30,11 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
 
     const campaign = campaignResult.rows[0]
     const leaderboardResult = await client.query(
-      'SELECT email, rank, referral_count FROM participants WHERE campaign_id = $1 ORDER BY rank ASC LIMIT 50',
+      `SELECT email, rank, referral_count
+       FROM participants
+       WHERE campaign_id = $1
+       ORDER BY COALESCE(referral_count, 0) DESC, rank ASC, created_at ASC
+       LIMIT 50`,
       [campaign.id]
     )
 
@@ -52,4 +56,3 @@ export default async function CampaignDetailPage({ params }: { params: Promise<{
     await client.end()
   }
 }
-

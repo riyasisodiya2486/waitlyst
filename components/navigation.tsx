@@ -33,7 +33,7 @@ export function Navigation() {
       </Link>
 
       <div className="hidden items-center gap-6 lg:flex">
-        <Link href="/dashboard" className="dm-mono text-[13px] text-[#8A8782] transition-colors duration-150 hover:text-[#F0EDE6]">
+        <Link href="/campaigns" className="dm-mono text-[13px] text-[#8A8782] transition-colors duration-150 hover:text-[#F0EDE6]">
           Product
         </Link>
         <a href="#" className="dm-mono text-[13px] text-[#8A8782] transition-colors duration-150 hover:text-[#F0EDE6]">

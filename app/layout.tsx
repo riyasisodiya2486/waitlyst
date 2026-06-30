@@ -39,7 +39,7 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" data-scroll-behavior="auto">
+    <html suppressHydrationWarning lang="en" data-scroll-behavior="auto">
       <body suppressHydrationWarning className="bg-[#080808] text-[#F0EDE6] antialiased">
         <SessionProvider value={{ founderId: session?.founderId || null, founderName }}>{children}</SessionProvider>
       </body>

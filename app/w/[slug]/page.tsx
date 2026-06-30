@@ -26,7 +26,7 @@ export default async function WaitlistPage({
         COALESCE(SUM(p.referral_count), 0)::int AS total_referrals
       FROM campaigns c
       LEFT JOIN participants p ON p.campaign_id = c.id
-      WHERE c.slug = $1
+      WHERE c.slug = $1 AND c.status = 'live'
       GROUP BY c.id, c.title, c.slug, c.description, c.status`,
       [slug]
     )
@@ -41,7 +41,11 @@ export default async function WaitlistPage({
       [campaign.id]
     )
     const leaderboardResult = await client.query(
-      'SELECT id, email, rank, referral_count FROM participants WHERE campaign_id = $1 ORDER BY rank ASC LIMIT 50',
+      `SELECT id, email, rank, referral_count
+       FROM participants
+       WHERE campaign_id = $1
+       ORDER BY COALESCE(referral_count, 0) DESC, rank ASC, created_at ASC
+       LIMIT 50`,
       [campaign.id]
     )
 
@@ -66,4 +70,3 @@ export default async function WaitlistPage({
     await client.end()
   }
 }
-

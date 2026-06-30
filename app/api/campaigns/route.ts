@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
       await client.query(
         'INSERT INTO campaigns (id, founder_id, title, description, slug, status, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-        [campaignId, session.founderId, title, description || '', slug, 'draft', now]
+        [campaignId, session.founderId, title, description || '', slug, 'live', now]
       )
 
       if (Array.isArray(rewardTiers) && rewardTiers.length > 0) {
@@ -129,4 +129,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: 'Failed to fetch campaigns' }, { status: 500 })
   }
 }
-

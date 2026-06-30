@@ -9,7 +9,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     try {
       const result = await client.query(
-        'SELECT id, email, rank, referral_count FROM participants WHERE campaign_id = $1 ORDER BY rank ASC LIMIT 50',
+        `SELECT id, email, rank, referral_count
+         FROM participants
+         WHERE campaign_id = $1
+         ORDER BY COALESCE(referral_count, 0) DESC, rank ASC, created_at ASC
+         LIMIT 50`,
         [campaignId]
       )
 

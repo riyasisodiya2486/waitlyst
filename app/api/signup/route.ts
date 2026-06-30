@@ -8,6 +8,23 @@ function getClientIp(request: NextRequest): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0] || request.headers.get('x-real-ip') || 'unknown'
 }
 
+async function recomputeCampaignRanks(client: any, campaignId: string) {
+  await client.query(
+    `WITH ranked AS (
+      SELECT id, ROW_NUMBER() OVER (
+        ORDER BY COALESCE(referral_count, 0) DESC, created_at ASC, email ASC
+      ) AS next_rank
+      FROM participants
+      WHERE campaign_id = $1
+    )
+    UPDATE participants p
+    SET rank = ranked.next_rank
+    FROM ranked
+    WHERE p.id = ranked.id`,
+    [campaignId],
+  )
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -43,14 +60,14 @@ export async function POST(request: NextRequest) {
       }
 
       const countResult = await client.query('SELECT COUNT(*) FROM participants WHERE campaign_id = $1', [campaign_id])
-      const rank = parseInt(countResult.rows[0].count, 10) + 1
+      const provisionalRank = parseInt(countResult.rows[0].count, 10) + 1
       const referralCode = nanoid(8)
       const participantId = uuidv4()
       const ipAddress = getClientIp(request)
 
       await client.query(
         'INSERT INTO participants (id, campaign_id, email, rank, referral_code, referred_by, ip_address, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-        [participantId, campaign_id, email, rank, referralCode, referred_by || null, ipAddress, new Date()],
+        [participantId, campaign_id, email, provisionalRank, referralCode, referred_by || null, ipAddress, new Date()],
       )
 
       if (referred_by) {
@@ -62,6 +79,13 @@ export async function POST(request: NextRequest) {
           await client.query('UPDATE participants SET referral_count = COALESCE(referral_count, 0) + 1 WHERE id = $1', [referrer.rows[0].id])
         }
       }
+
+      await recomputeCampaignRanks(client, campaign_id)
+
+      const insertedParticipant = await client.query(
+        'SELECT rank, referral_code FROM participants WHERE id = $1',
+        [participantId],
+      )
 
       await client.end()
 
@@ -76,7 +100,7 @@ export async function POST(request: NextRequest) {
         console.warn('[v0] Referral logging failed silently:', logError)
       }
 
-      return NextResponse.json({ rank, referralCode })
+      return NextResponse.json({ rank: insertedParticipant.rows[0].rank, referralCode: insertedParticipant.rows[0].referral_code })
     } catch (dbError) {
       await client.end()
       throw dbError
