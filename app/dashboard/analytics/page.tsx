@@ -98,7 +98,7 @@ export default async function AnalyticsPage() {
                         </td>
                       </tr>
                     ) : (
-                      campaigns.map((campaign) => (
+                      campaigns.map((campaign: any) => (
                         <tr key={campaign.id} className="border-b border-[rgba(255,255,255,0.04)] text-[13px] last:border-b-0">
                           <td className="px-4 py-4 sm:px-6 text-[#F0EDE6]">{campaign.title}</td>
                           <td className="px-4 py-4 sm:px-6 dm-mono text-[#F0EDE6]">{campaign.signupCount}</td>

@@ -2,6 +2,7 @@ allowBuilds:
   esbuild: true
   msw: true
   sharp: true
+  unrs-resolver: false
 minimumReleaseAgeExclude:
   - '@aws-sdk/client-dynamodb@3.1070.0'
   - '@aws-sdk/dsql-signer@3.1070.0'

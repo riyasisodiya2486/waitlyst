@@ -7,14 +7,20 @@ import { getDbClient } from '@/lib/db'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, email, password } = body
+    const { name: rawName, email: rawEmail, password } = body ?? {}
 
     // Validate inputs
-    if (!name || !email || !password) {
+    if (typeof rawName !== 'string' || typeof rawEmail !== 'string' || typeof password !== 'string' || !rawName.trim() || !rawEmail.trim() || !password) {
       return NextResponse.json({ message: 'Missing required fields' }, { status: 400 })
     }
 
-    if (!email.includes('@')) {
+    const name = rawName.trim()
+    const email = rawEmail.trim().toLowerCase()
+    if (name.length > 120) {
+      return NextResponse.json({ message: 'Name must be 120 characters or fewer' }, { status: 400 })
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ message: 'Invalid email format' }, { status: 400 })
     }
 
@@ -43,21 +49,15 @@ export async function POST(request: NextRequest) {
       const founderId = uuidv4()
       const now = new Date()
 
-      console.log('[signup] Inserting founder:', email, 'id:', founderId)
-
       await client.query(
         'INSERT INTO founders (id, email, name, password_hash, plan, created_at) VALUES ($1, $2, $3, $4, $5, $6)',
         [founderId, email, name, passwordHash, 'free', now]
       )
 
-      console.log('[signup] Founder created successfully:', founderId)
-
       await client.end()
 
       // Create session
       await createSession(founderId)
-
-      console.log('[signup] Session created for founder:', founderId)
 
       return NextResponse.json({
         id: founderId,
@@ -81,9 +81,6 @@ export async function POST(request: NextRequest) {
       code: error?.code,
       stack: error?.stack,
     })
-    return NextResponse.json(
-      { message: error?.message || 'Failed to create account' },
-      { status: 500 }
-    )
+    return NextResponse.json({ message: 'Failed to create account' }, { status: 500 })
   }
 }

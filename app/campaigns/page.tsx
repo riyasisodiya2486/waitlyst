@@ -54,7 +54,7 @@ export default async function PublicCampaignsPage() {
                   No campaigns are available yet.
                 </div>
               ) : (
-                campaigns.map((campaign) => (
+                campaigns.map((campaign: any) => (
                   <div key={campaign.id} className="flex h-full flex-col rounded-[12px] border border-[rgba(255,255,255,0.06)] bg-[#0F0F0F] p-6">
                     <div className="flex items-start justify-between gap-3">
                       <h2 className="dm-mono text-[16px] font-medium text-[#F0EDE6]">{campaign.title}</h2>

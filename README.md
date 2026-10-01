@@ -140,6 +140,7 @@ Notes:
 - If you are not using OIDC locally, the code can also use direct AWS credentials.
 - `AUTH_SECRET` is still used by [`lib/session.ts`](./lib/session.ts) for signing login sessions.
 - `STRIPE_PRICE_ID` is still required by [`app/api/billing/checkout/route.ts`](./app/api/billing/checkout/route.ts) for the paid upgrade flow.
+- The local PostgreSQL fallback uses `LOCAL_PGHOST`, `LOCAL_PGPORT`, `LOCAL_PGUSER`, `LOCAL_PGDATABASE`, and optional `LOCAL_PGPASSWORD`. It defaults to `127.0.0.1:5432`, user `postgres`, and database `waitlyst`; keep these separate from the AWS DSQL `PG*` settings.
 
 ### 3. Set up the database
 

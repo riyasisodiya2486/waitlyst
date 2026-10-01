@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
           [campaignId]
         )
 
-        events = participantSnapshot.rows.map((row) => ({
+        events = participantSnapshot.rows.map((row: any) => ({
           participant_id: row.id,
           email: row.email,
           ip_address: row.ip_address,
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       }
 
       if ((!fraudAnalysis.length || usedFallback) && seededFlags.rows.length > 0) {
-        fraudAnalysis = seededFlags.rows.map((row) => ({
+        fraudAnalysis = seededFlags.rows.map((row: any) => ({
           email: row.email,
           ip: row.ip_address || 'unknown',
           referrals: Number(row.referral_count || 0),

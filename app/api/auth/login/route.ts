@@ -6,33 +6,20 @@ import { getDbClient } from '@/lib/db'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, password } = body
+    const { email: rawEmail, password } = body ?? {}
 
-    if (!email || !password) {
+    if (typeof rawEmail !== 'string' || typeof password !== 'string' || !rawEmail.trim() || !password) {
       return NextResponse.json({ message: 'Missing email or password' }, { status: 400 })
     }
+    const email = rawEmail.trim().toLowerCase()
 
     const client = await getDbClient()
 
     try {
-      // Find founder
-      let result
-      try {
-        result = await client.query(
-          'SELECT id, name, password_hash FROM founders WHERE email = $1',
-          [email]
-        )
-      } catch (columnError: any) {
-        if (columnError.code === '42703') {
-          // Column doesn't exist, try without it
-          result = await client.query(
-            'SELECT id, name FROM founders WHERE email = $1',
-            [email]
-          )
-        } else {
-          throw columnError
-        }
-      }
+      const result = await client.query(
+        'SELECT id, name, password_hash FROM founders WHERE email = $1',
+        [email]
+      )
 
       if (result.rows.length === 0) {
         await client.end()
@@ -41,17 +28,16 @@ export async function POST(request: NextRequest) {
 
       const founder = result.rows[0]
 
-      // Compare password if column exists
-      if (founder.password_hash) {
-        const isValid = await bcrypt.compare(password, founder.password_hash)
+      // Never authenticate legacy/incomplete accounts without a stored password hash.
+      if (typeof founder.password_hash !== 'string' || !founder.password_hash) {
+        await client.end()
+        return NextResponse.json({ message: 'Invalid email or password' }, { status: 401 })
+      }
 
-        if (!isValid) {
-          await client.end()
-          return NextResponse.json({ message: 'Invalid email or password' }, { status: 401 })
-        }
-      } else {
-        // Password column doesn't exist, just check email
-        console.log('[v0] No password hash stored for user, allowing login')
+      const isValid = await bcrypt.compare(password, founder.password_hash)
+      if (!isValid) {
+        await client.end()
+        return NextResponse.json({ message: 'Invalid email or password' }, { status: 401 })
       }
 
       await client.end()

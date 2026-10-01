@@ -40,6 +40,9 @@
     ".next-build/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next",
+    ".next-app",
+    ".next-build"
   ]
 }

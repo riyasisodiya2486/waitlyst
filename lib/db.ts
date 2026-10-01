@@ -86,10 +86,11 @@ export async function getDbClient() {
     console.warn('[db] AWS DSQL connection failed, falling back to local PostgreSQL. Reason:', reason)
 
     const localClient = new Client({
-      host: '127.0.0.1',
-      port: 5432,
-      user: 'postgres',
-      database: 'waitlyst',
+      host: process.env.LOCAL_PGHOST || '127.0.0.1',
+      port: Number(process.env.LOCAL_PGPORT || 5432),
+      user: process.env.LOCAL_PGUSER || 'postgres',
+      database: process.env.LOCAL_PGDATABASE || 'waitlyst',
+      ...(process.env.LOCAL_PGPASSWORD ? { password: process.env.LOCAL_PGPASSWORD } : {}),
       ssl: false,
     })
 

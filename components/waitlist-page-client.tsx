@@ -126,7 +126,7 @@ export function WaitlistPageClient({
           ) : (
             <div className="space-y-6 text-center">
               <div>
-                <p className="text-[18px] text-[#8A8782]">You're in.</p>
+                <p className="text-[18px] text-[#8A8782]">You&apos;re in.</p>
                 <div className="mt-4 dm-mono text-[60px] text-[#C8F135] sm:text-[82px]">{success.rank}</div>
                 <p className="text-[14px] text-[#8A8782]">Share your link to move up the leaderboard.</p>
               </div>

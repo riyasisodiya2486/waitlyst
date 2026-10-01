@@ -6,7 +6,6 @@ import { motion, useMotionValue, useSpring } from 'framer-motion'
 export function CustomCursor() {
   const [isVisible, setIsVisible] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
-  const [isTouchDevice, setIsTouchDevice] = useState(false)
 
   const cursorX = useMotionValue(0)
   const cursorY = useMotionValue(0)
@@ -18,7 +17,6 @@ export function CustomCursor() {
   useEffect(() => {
     // Check if touch device
     const isTouch = window.matchMedia('(pointer: coarse)').matches
-    setIsTouchDevice(isTouch)
     if (isTouch) return
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -65,15 +63,13 @@ export function CustomCursor() {
     }
   }, [cursorX, cursorY, ringX, ringY])
 
-  if (isTouchDevice) return null
-
   return (
     <>
       {isVisible && (
         <>
           {/* Inner dot */}
           <motion.div
-            className="pointer-events-none fixed z-50 flex items-center justify-center"
+            className="custom-cursor pointer-events-none fixed z-50 flex items-center justify-center"
             style={{
               left: cursorX,
               top: cursorY,
@@ -86,7 +82,7 @@ export function CustomCursor() {
 
           {/* Outer ring */}
           <motion.div
-            className="pointer-events-none fixed z-40 rounded-full border"
+            className="custom-cursor pointer-events-none fixed z-40 rounded-full border"
             style={{
               left: ringX,
               top: ringY,

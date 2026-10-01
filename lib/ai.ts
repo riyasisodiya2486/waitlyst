@@ -1,8 +1,12 @@
 import Groq from 'groq-sdk'
 import type { ReferralEvent } from './dynamo'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
 const MODEL = 'llama-3.3-70b-versatile'
+
+function getGroqClient(): Groq | null {
+  const apiKey = process.env.GROQ_API_KEY
+  return apiKey ? new Groq({ apiKey }) : null
+}
 
 export interface FraudAnalysisResult {
   email: string
@@ -104,6 +108,9 @@ export async function analyzeFraud(events: FraudEventLike[]): Promise<FraudAnaly
     return []
   }
 
+  const groq = getGroqClient()
+  if (!groq) return fallbackFraudAnalysis(events)
+
   const normalizedEvents = events.slice(-100).map((event, index) => ({
     participantId: event.participant_id || event.email,
     email: event.email,
@@ -179,6 +186,9 @@ export async function suggestRewardTiers(campaignDescription: string): Promise<R
   if (!process.env.GROQ_API_KEY) {
     return fallback
   }
+
+  const groq = getGroqClient()
+  if (!groq) return fallback
 
   try {
     const completion = await groq.chat.completions.create({
