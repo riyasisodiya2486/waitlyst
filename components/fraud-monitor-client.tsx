@@ -58,7 +58,7 @@ export function FraudMonitorClient({
       setFraudItems(json.results || [])
     } catch (err) {
       console.error('[v0] Failed to fetch fraud data:', err)
-      setError('Fraud analysis is using fallback data right now.')
+      setError('Fraud analysis failed. Please try again.')
     } finally {
       setLoading(false)
     }

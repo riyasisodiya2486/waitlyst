@@ -75,17 +75,20 @@ function fallbackFraudAnalysis(events: FraudEventLike[]): FraudAnalysisResult[] 
   const ipCounts = new Map<string, number>()
   for (const event of events) {
     const ip = event.ip_address || 'unknown'
-    ipCounts.set(ip, (ipCounts.get(ip) || 0) + 1)
+    if (ip !== 'unknown') {
+      ipCounts.set(ip, (ipCounts.get(ip) || 0) + 1)
+    }
   }
 
   return events
     .map((event) => {
-      const duplicateIpCount = ipCounts.get(event.ip_address || 'unknown') || 1
+      const ip = event.ip_address || 'unknown'
+      const duplicateIpCount = ip === 'unknown' ? 1 : ipCounts.get(ip) || 1
       const referrals = Number(event.referral_count || 0)
-      const riskScore = Math.min(95, 35 + referrals * 8 + Math.max(0, duplicateIpCount - 1) * 12)
+      const riskScore = Math.min(95, 35 + referrals * 8 + Math.max(0, duplicateIpCount - 1) * 25)
       return {
         email: event.email,
-        ip: event.ip_address || 'unknown',
+        ip,
         referrals,
         riskScore,
         reason:
@@ -148,28 +151,37 @@ export async function analyzeFraud(events: FraudEventLike[]): Promise<FraudAnaly
     const raw = getContentText(completion.choices[0]?.message?.content)
     const parsed = parseJsonObject<FraudAnalysisJson>(raw)
 
-    if (!parsed?.flaggedParticipantIds?.length) {
-      return []
-    }
-
     const byId = new Map(normalizedEvents.map((event) => [event.participantId, event]))
+    const flaggedParticipantIds = parsed?.flaggedParticipantIds || []
 
-    return parsed.flaggedParticipantIds
+    const aiResults = flaggedParticipantIds
       .map((id) => {
         const event = byId.get(id)
         if (!event) return null
-        const riskScore = Math.max(0, Math.min(100, Math.round(Number(parsed.riskScores?.[id] ?? 0))))
+        const riskScore = Math.max(0, Math.min(100, Math.round(Number(parsed?.riskScores?.[id] ?? 0))))
         return {
           email: event.email,
           ip: event.ipAddress,
           referrals: event.referralCount,
           riskScore,
-          reason: parsed.reasons?.[id] || 'AI review flagged this participant for manual investigation.',
+          reason: parsed?.reasons?.[id] || 'AI review flagged this participant for manual investigation.',
         }
       })
       .filter((item): item is FraudAnalysisResult => !!item)
       .filter((item) => item.riskScore >= 50)
       .sort((a, b) => b.riskScore - a.riskScore)
+
+    const combinedResults = new Map(fallbackFraudAnalysis(events).map((result) => [result.email, result]))
+    for (const result of aiResults) {
+      const existing = combinedResults.get(result.email)
+      if (!existing || result.riskScore > existing.riskScore) {
+        combinedResults.set(result.email, result)
+      }
+    }
+
+    return Array.from(combinedResults.values())
+      .sort((a, b) => b.riskScore - a.riskScore)
+      .slice(0, 100)
   } catch (e) {
     console.error('[ai] Failed to analyze fraud with Groq:', e)
     return fallbackFraudAnalysis(events)
